@@ -32,27 +32,41 @@ include '../includes/header.php';
         <form id="registerForm"> <!-- ID added for JavaScript control -->
             
             <!-- SECTION 1: OFFICIAL NAME -->
-            <h6 class="fw-bold text-royal mb-3"><i class="fas fa-user-tag me-2"></i>Official Name</h6>
-            <div class="row g-2 mb-4">
-                <div class="col-md-5">
-                    <div class="form-floating">
-                        <input type="text" name="surname" class="form-control text-uppercase" id="lName" placeholder="Surname" required>
-                        <label for="lName">Surname</label>
-                    </div>
-                </div>
-                <div class="col-md-5">
-                    <div class="form-floating">
-                        <input type="text" name="first_name" class="form-control text-uppercase" id="fName" placeholder="First Name" required>
-                        <label for="fName">First Name</label>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-floating">
-                        <input type="text" name="mi" class="form-control text-center text-uppercase" id="mi" placeholder="MI" maxlength="2">
-                        <label for="mi">M.I.</label>
-                    </div>
-                </div>
-            </div>
+<h6 class="fw-bold text-royal mb-3"><i class="fas fa-user-tag me-2"></i>Official Name</h6>
+<div class="row g-2 mb-4">
+    <div class="col-md-4">
+        <div class="form-floating">
+            <input type="text" name="surname" class="form-control text-uppercase" id="lName" placeholder="Surname" required>
+            <label for="lName">Surname</label>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="form-floating">
+            <input type="text" name="first_name" class="form-control text-uppercase" id="fName" placeholder="First Name" required>
+            <label for="fName">First Name</label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="form-floating">
+            <input type="text" name="mi" class="form-control text-center text-uppercase" id="mi" placeholder="MI" maxlength="2">
+            <label for="mi">M.I.</label>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="form-floating">
+            <select name="extension" class="form-select" id="extSelect">
+                <option value="" selected></option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+            </select>
+            <label for="extSelect">Ext.</label>
+        </div>
+    </div>
+</div>
 
             <!-- SECTION 2: CONTACT & SECURITY -->
             <h6 class="fw-bold text-royal mb-3"><i class="fas fa-shield-alt me-2"></i>Contact & Security</h6>
@@ -91,11 +105,11 @@ include '../includes/header.php';
                     </div>
                 </div>
                 <div class="col-md-5">
-                    <div class="form-floating form-floating-sm">
-                        <input type="text" name="uli" class="form-control" id="uliInput" placeholder="ULI" required>
-                        <label for="uliInput">ULI (Unique Learner's Identifier)</label>
-                    </div>
-                </div>
+    <div class="form-floating form-floating-sm">
+        <input type="text" name="uli" class="form-control" id="uliInput" placeholder="ULI" required maxlength="16">
+        <label for="uliInput">ULI (Unique Learner's Identifier)</label>
+    </div>
+</div>
             </div>
 
             <!-- SECTION 4: ADDRESS -->
@@ -240,8 +254,64 @@ include '../includes/header.php';
         regBtn.addEventListener('click', function() {
             // Check browser native validation
             if (form.checkValidity()) {
-                // If valid, show the institutional modal
-                successModal.show();
+                // Disable button to prevent double submission
+                regBtn.disabled = true;
+                regBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>PROCESSING...';
+                
+                // Prepare form data
+                const formData = new FormData(form);
+                
+                // Debug: Log form data
+                console.log('Sending registration data...');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key + ': ' + value);
+                }
+                
+                // Send AJAX request
+                fetch('register-handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    
+                    // Try to parse as JSON
+                    return response.text().then(text => {
+                        console.log('Raw response:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error('JSON parse error:', e);
+                            console.error('Response text:', text);
+                            throw new Error('Invalid JSON response from server');
+                        }
+                    });
+                })
+                .then(data => {
+                    console.log('Parsed data:', data);
+                    
+                    if (data.success) {
+                        // Show success modal
+                        successModal.show();
+                    } else {
+                        // Show error message
+                        alert('Registration Error: ' + data.message);
+                        regBtn.disabled = false;
+                        regBtn.innerHTML = 'REGISTER ACCOUNT';
+                    }
+                })
+                .catch(error => {
+                    console.error('Full error:', error);
+                    alert('An error occurred during registration: ' + error.message + '\nCheck console for details.');
+                    regBtn.disabled = false;
+                    regBtn.innerHTML = 'REGISTER ACCOUNT';
+                });
             } else {
                 // If invalid, highlight missing fields
                 form.reportValidity();
@@ -254,5 +324,3 @@ include '../includes/header.php';
         });
     });
 </script>
-
-<?php include '../includes/footer.php'; ?>
