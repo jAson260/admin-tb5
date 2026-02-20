@@ -1,31 +1,102 @@
 <?php 
-include '../includes/header.php'; 
-include '../includes/sidebar.php'; 
+session_start();
 
-// Mock Data representing the fetchable structure (No SQL used as requested)
-$user_data = [
-    'uli' => 'REG-2024-000123',
-    'surname' => 'DOE',
-    'first_name' => 'JOHN',
-    'mi' => 'D',
-    'sex' => 'Male',
-    'dob' => '1998-05-15',
-    'phone' => '639945698522',
-    'region' => 'Region IV-A',
-    'province' => 'Laguna',
-    'city' => 'San Pablo City',
-    'barangay' => 'Brgy VII-A',
-    'secondary_school' => 'San Pablo City National High School',
-    'secondary_year' => '2014',
-    'tertiary_school' => 'Laguna State Polytechnic University',
-    'tertiary_year' => '2018',
-    'profile_pic' => '../img/logo1.png' 
-];
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: ../login/login.php');
+    exit;
+}
+
+require_once('../db-connect.php');
 
 $msg = "";
-if(isset($_POST['update_profile'])){
-    $msg = "Your update request has been sent to the Admin for approval.";
+$user_data = [];
+
+try {
+    // Fetch user data from database
+    $stmt = $pdo->prepare("
+        SELECT 
+            Id, ULI, FirstName, LastName, MiddleName, ExtensionName,
+            Email, Sex, BirthDate, ContactNo, Age,
+            RegionName, ProvinceName, CityName, BarangayName,
+            Status
+        FROM studentinfos 
+        WHERE Id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    $userData = $stmt->fetch();
+    
+    if ($userData) {
+        // Map database fields to display format
+        $user_data = [
+            'id' => $userData['Id'],
+            'uli' => $userData['ULI'],
+            'first_name' => $userData['FirstName'],
+            'surname' => $userData['LastName'],
+            'mi' => $userData['MiddleName'],
+            'extension' => $userData['ExtensionName'],
+            'email' => $userData['Email'],
+            'sex' => $userData['Sex'],
+            'dob' => date('Y-m-d', strtotime($userData['BirthDate'])),
+            'phone' => $userData['ContactNo'],
+            'age' => $userData['Age'],
+            'region' => $userData['RegionName'],
+            'province' => $userData['ProvinceName'],
+            'city' => $userData['CityName'],
+            'barangay' => $userData['BarangayName'],
+            'status' => $userData['Status'],
+            'profile_pic' => '../img/default-avatar.png', // Default avatar
+            'secondary_school' => '',
+            'secondary_year' => '',
+            'tertiary_school' => '',
+            'tertiary_year' => ''
+        ];
+    } else {
+        // User not found
+        $_SESSION['logged_in'] = false;
+        header('Location: ../login/login.php');
+        exit;
+    }
+    
+} catch(PDOException $e) {
+    $msg = "Error loading profile: " . $e->getMessage();
 }
+
+// Handle form submission for profile update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
+    try {
+        $region = trim($_POST['region'] ?? '');
+        $province = trim($_POST['province'] ?? '');
+        $city = trim($_POST['city'] ?? '');
+        $barangay = trim($_POST['barangay'] ?? '');
+        
+        $updateStmt = $pdo->prepare("
+            UPDATE studentinfos 
+            SET RegionName = ?, ProvinceName = ?, CityName = ?, BarangayName = ?
+            WHERE Id = ?
+        ");
+        
+        if ($updateStmt->execute([$region, $province, $city, $barangay, $_SESSION['user_id']])) {
+            $msg = "Address update request sent to admin for approval!";
+            // Refresh page to show updated data
+            header('Location: useraccount.php?success=1');
+            exit;
+        }
+        
+    } catch(PDOException $e) {
+        $msg = "Error updating profile: " . $e->getMessage();
+    }
+}
+
+// Handle profile picture upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['new_avatar'])) {
+    // TODO: Implement file upload logic
+    $msg = "Profile picture upload request sent to admin!";
+}
+
+include '../includes/header.php'; 
+include '../includes/sidebar.php'; 
 ?>
 
 <div class="main-content">
@@ -40,7 +111,7 @@ if(isset($_POST['update_profile'])){
 
         <?php if($msg != ""): ?>
             <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm" role="alert">
-                <i class="fas fa-info-circle me-2"></i> <?php echo $msg; ?>
+                <i class="fas fa-info-circle me-2"></i> <?php echo htmlspecialchars($msg); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
@@ -50,7 +121,7 @@ if(isset($_POST['update_profile'])){
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm text-center p-4 mb-4 rounded-4">
                     <div class="position-relative d-inline-block mx-auto">
-                        <img src="<?php echo $user_data['profile_pic']; ?>" 
+                        <img src="<?php echo htmlspecialchars($user_data['profile_pic']); ?>" 
                              alt="Avatar" 
                              class="rounded-circle border border-4 border-white shadow-sm" 
                              style="width: 140px; height: 140px; object-fit: cover;">
@@ -59,9 +130,17 @@ if(isset($_POST['update_profile'])){
                             <i class="fas fa-camera"></i>
                         </button>
                     </div>
-                    <h5 class="mt-3 mb-0 fw-bold"><?php echo $user_data['surname'] . ", " . $user_data['first_name'] . " " . $user_data['mi'] . "."; ?></h5>
-                    <p class="text-muted small mb-3">ULI: <?php echo $user_data['uli']; ?></p>
-                    <span class="badge bg-success rounded-pill px-3 py-2">Verified Student Account</span>
+                    <h5 class="mt-3 mb-0 fw-bold">
+                        <?php 
+                        echo htmlspecialchars($user_data['surname'] . ", " . $user_data['first_name']);
+                        if (!empty($user_data['mi'])) echo " " . htmlspecialchars($user_data['mi']) . ".";
+                        if (!empty($user_data['extension'])) echo " " . htmlspecialchars($user_data['extension']);
+                        ?>
+                    </h5>
+                    <p class="text-muted small mb-3">ULI: <?php echo htmlspecialchars($user_data['uli']); ?></p>
+                    <span class="badge bg-<?php echo ($user_data['status'] === 'Approved') ? 'success' : 'warning'; ?> rounded-pill px-3 py-2">
+                        <?php echo htmlspecialchars($user_data['status']); ?> Account
+                    </span>
                 </div>
             </div>
 
@@ -81,20 +160,26 @@ if(isset($_POST['update_profile'])){
                             <div class="row g-3 mb-4">
                                 <div class="col-md-4">
                                     <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo $user_data['surname']; ?>" readonly>
+                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['surname']); ?>" readonly>
                                         <label>Surname</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo $user_data['first_name']; ?>" readonly>
+                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['first_name']); ?>" readonly>
                                         <label>First Name</label>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-2">
                                     <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo $user_data['mi']; ?>" readonly>
+                                        <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['mi']); ?>" readonly>
                                         <label>M.I.</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['extension']); ?>" readonly>
+                                        <label>Ext.</label>
                                     </div>
                                 </div>
                             </div>
@@ -108,7 +193,6 @@ if(isset($_POST['update_profile'])){
     <!-- Sex Selection - LOCKED -->
     <div class="col-md-2">
         <div class="form-floating form-floating-sm">
-            <!-- Note: Selects use 'disabled' and bg-light for the locked look -->
             <select name="sex" class="form-select bg-light" id="sexSelect" disabled>
                 <option value="Male" <?php echo ($user_data['sex'] == 'Male') ? 'selected':''; ?>>Male</option>
                 <option value="Female" <?php echo ($user_data['sex'] == 'Female') ? 'selected':''; ?>>Female</option>
@@ -120,16 +204,24 @@ if(isset($_POST['update_profile'])){
     <!-- Date of Birth - LOCKED -->
     <div class="col-md-3">
         <div class="form-floating form-floating-sm">
-            <input type="date" name="dob" class="form-control bg-light" id="dobInput" value="<?php echo $user_data['dob']; ?>" readonly>
+            <input type="date" name="dob" class="form-control bg-light" id="dobInput" value="<?php echo htmlspecialchars($user_data['dob']); ?>" readonly>
             <label for="dobInput">Date of Birth</label>
         </div>
     </div>
 
-    <!-- Phone Number - NEW & LOCKED -->
+    <!-- Phone Number - LOCKED -->
     <div class="col-md-4">
         <div class="form-floating form-floating-sm">
-            <input type="text" name="phone" class="form-control bg-light" id="phoneInput" value="<?php echo $user_data['phone']; ?>" placeholder="639..." readonly>
-            <label for="phoneInput">Phone Number (ex. 639945698522)</label>
+            <input type="text" name="phone" class="form-control bg-light" id="phoneInput" value="<?php echo htmlspecialchars($user_data['phone']); ?>" placeholder="639..." readonly>
+            <label for="phoneInput">Phone Number</label>
+        </div>
+    </div>
+
+    <!-- Email - LOCKED -->
+    <div class="col-md-3">
+        <div class="form-floating form-floating-sm">
+            <input type="email" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['email']); ?>" readonly>
+            <label>Email</label>
         </div>
     </div>
 </div>
@@ -160,7 +252,8 @@ if(isset($_POST['update_profile'])){
                                 <div class="col-md-3">
                                     <div class="form-floating form-floating-sm">
                                         <select name="city" class="form-select" id="citySelect" required>
-                                            <option value="San Pablo City" <?php echo ($user_data['city'] == 'San Pablo City') ? 'selected':''; ?>>San Pablo City</option>
+                                            <option value="San Pablo" <?php echo ($user_data['city'] == 'San Pablo') ? 'selected':''; ?>>San Pablo</option>
+                                            <option value="Calamba" <?php echo ($user_data['city'] == 'Calamba') ? 'selected':''; ?>>Calamba</option>
                                         </select>
                                         <label for="citySelect">Municipality/City</label>
                                     </div>
@@ -181,52 +274,45 @@ if(isset($_POST['update_profile'])){
 </h6>
 
 <div class="row g-3 mb-3">
-    <!-- Secondary School - LOCKED -->
     <div class="col-md-9">
         <div class="form-floating">
             <input type="text" name="secondary_school" class="form-control bg-light" id="secSchool" 
-                   value="<?php echo $user_data['secondary_school']; ?>" readonly>
+                   value="<?php echo htmlspecialchars($user_data['secondary_school']); ?>" readonly>
             <label for="secSchool">Secondary School Attended</label>
         </div>
     </div>
-    <!-- Year Completed - LOCKED -->
     <div class="col-md-3">
         <div class="form-floating">
             <input type="number" name="secondary_year" class="form-control bg-light text-center" id="secYear" 
-                   value="<?php echo $user_data['secondary_year']; ?>" readonly>
+                   value="<?php echo htmlspecialchars($user_data['secondary_year']); ?>" readonly>
             <label for="secYear">Year Completed</label>
         </div>
     </div>
 </div>
 
 <div class="row g-3 mb-4">
-    <!-- Tertiary School - LOCKED -->
     <div class="col-md-9">
         <div class="form-floating">
             <input type="text" name="tertiary_school" class="form-control bg-light" id="tertSchool" 
-                   value="<?php echo $user_data['tertiary_school']; ?>" readonly>
+                   value="<?php echo htmlspecialchars($user_data['tertiary_school']); ?>" readonly>
             <label for="tertSchool">Tertiary School Attended (College / Vocational)</label>
         </div>
     </div>
-    <!-- Year Completed - LOCKED -->
     <div class="col-md-3">
         <div class="form-floating">
             <input type="number" name="tertiary_year" class="form-control bg-light text-center" id="tertYear" 
-                   value="<?php echo $user_data['tertiary_year']; ?>" readonly>
+                   value="<?php echo htmlspecialchars($user_data['tertiary_year']); ?>" readonly>
             <label for="tertYear">Year Completed</label>
         </div>
     </div>
 </div>
 
-<div class="text-end border-top pt-4">
-    <p class="text-muted small mb-3 italic">
-        <i class="fas fa-info-circle me-1"></i> 
-        Some fields are locked. To update your official records, click the button below to notify the Admin.
-    </p>
-  
-</div>
                             <!-- ACTION BUTTON -->
                             <div class="text-end border-top pt-4">
+                                <p class="text-muted small mb-3 fst-italic">
+                                    <i class="fas fa-info-circle me-1"></i> 
+                                    Some fields are locked. To update your official records, click the button below to notify the Admin.
+                                </p>
                                 <button type="submit" name="update_profile" class="btn btn-royal rounded-pill px-5 py-2 fw-bold shadow-sm">
                                     Send to Admin for Approval <i class="fas fa-paper-plane ms-2"></i>
                                 </button>
