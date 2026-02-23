@@ -9,7 +9,7 @@ unset($_SESSION['login_error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Big Five Training and Assessment Center</title>
-    
+    <link rel="icon" type="image/x-icon" href="<?php echo $root; ?>img/favicon.ico">
     <!-- Use $root for assets so they never break -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -131,7 +131,7 @@ unset($_SESSION['login_error']);
         <form action="login-handler.php" method="POST">
             <div class="form-floating mb-3">
                 <input type="text" class="form-control" id="username" name="username" placeholder="Email or ULI" required>
-                <label for="username"><i class="fas fa-user me-2"></i>Email or ULI</label>
+                <label for="username"><i class="fas fa-user me-2"></i>Enter Email</label>
             </div>
 
           <div class="form-floating mb-3 position-relative">

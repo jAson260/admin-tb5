@@ -188,14 +188,47 @@ include '../includes/header.php';
             </div>
 
             <!-- SECTION 6: PASSWORD -->
-            <h6 class="fw-bold text-royal mb-3"><i class="fas fa-key me-2"></i>Account Security</h6>
-            <div class="form-floating mb-4 position-relative">
-                <input type="password" name="password" class="form-control pe-5" id="pass" placeholder="Password" required>
-                <label for="pass">Create Password</label>
-                <span class="position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer; z-index: 10;">
-                    <i class="fas fa-eye text-muted" id="eyeIcon"></i>
-                </span>
-            </div>
+<!-- SECTION 6: PASSWORD -->
+<h6 class="fw-bold text-royal mb-3"><i class="fas fa-key me-2"></i>Account Security</h6>
+<div class="form-floating mb-4 position-relative">
+    <!-- added 'z-index: 1' to ensure it's not buried -->
+    <input type="password" name="password" class="form-control pe-5" id="pass" placeholder="Password" required style="z-index: 1;">
+    <label for="pass">Create Password</label>
+    
+    <!-- EYE ICON TOGGLE -->
+    <!-- z-index: 10 makes sure the button stays clickable on top of the floating label -->
+    <span class="position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer; z-index: 10;">
+        <i class="fas fa-eye text-muted" id="eyeIcon"></i>
+    </span>
+</div>
+
+<!-- Place this script just before your footer include or inside your scripts block -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleBtn = document.querySelector('#togglePassword');
+        const passwordInput = document.querySelector('#pass');
+        const icon = document.querySelector('#eyeIcon');
+
+        if(toggleBtn) {
+            toggleBtn.addEventListener('click', function (e) {
+                // Stop the form from doing anything else
+                e.preventDefault();
+                
+                // Toggle the 'type' attribute
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Toggle the eye / eye-slash icon
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+                
+                // Optional: Toggle color to blue when showing
+                icon.classList.toggle('text-royal');
+                icon.classList.toggle('text-muted');
+            });
+        }
+    });
+</script>
 
             <!-- Action Button - Manually controlled via ID -->
             <button type="button" id="btnRegister" class="btn btn-royal w-100 py-3 border-0 shadow-sm fw-bold rounded-pill">
@@ -324,3 +357,6 @@ include '../includes/header.php';
         });
     });
 </script>
+
+
+<?php include '../includes/footer.php'; ?>

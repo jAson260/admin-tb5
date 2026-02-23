@@ -1,4 +1,4 @@
-<form action="enrollment_page3.php" method="POST">
+<form action="upload-documents-handler.php" method="POST" enctype="multipart/form-data" id="uploadForm">
 
     <?php 
 // Go up one level to find the includes folder
@@ -67,7 +67,7 @@ include '../includes/header.php';
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-dark"><i class="fas fa-baby me-2 text-primary"></i>PSA Birth Certificate</label>
                             <div class="file-upload-wrapper">
-                                <input type="file" name="psa_file" class="form-control border-0 bg-transparent" required>
+                                <input type="file" name="psa_file" class="form-control border-0 bg-transparent" accept=".pdf,.jpg,.jpeg,.png" required>
                                 <div class="form-text mt-1" style="font-size: 11px;">Official PSA copy is required.</div>
                             </div>
                         </div>
@@ -76,7 +76,7 @@ include '../includes/header.php';
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-dark"><i class="fas fa-file-alt me-2 text-primary"></i>Transcript of Records (TOR)</label>
                             <div class="file-upload-wrapper">
-                                <input type="file" name="tor_file" class="form-control border-0 bg-transparent" required>
+                                <input type="file" name="tor_file" class="form-control border-0 bg-transparent" accept=".pdf,.jpg,.jpeg,.png" required>
                                 <div class="form-text mt-1" style="font-size: 11px;">Clear copy of your latest TOR.</div>
                             </div>
                         </div>
@@ -85,7 +85,7 @@ include '../includes/header.php';
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-dark"><i class="fas fa-graduation-cap me-2 text-primary"></i>Diploma</label>
                             <div class="file-upload-wrapper">
-                                <input type="file" name="diploma_file" class="form-control border-0 bg-transparent" required>
+                                <input type="file" name="diploma_file" class="form-control border-0 bg-transparent" accept=".pdf,.jpg,.jpeg,.png" required>
                                 <div class="form-text mt-1" style="font-size: 11px;">High School or College Diploma.</div>
                             </div>
                         </div>
@@ -97,7 +97,7 @@ include '../includes/header.php';
                                 <span class="badge bg-light text-muted fw-normal" style="font-size: 10px;">Optional</span>
                             </div>
                             <div class="file-upload-wrapper">
-                                <input type="file" name="marriage_cert" class="form-control border-0 bg-transparent">
+                                <input type="file" name="marriage_cert" class="form-control border-0 bg-transparent" accept=".pdf,.jpg,.jpeg,.png">
                                 <div class="form-text mt-1" style="font-size: 11px;">Only for married female applicants.</div>
                             </div>
                         </div>
@@ -129,8 +129,7 @@ include '../includes/header.php';
                             <i class="fas fa-chevron-left me-2"></i> Back
                         </a>
                         
-                        <!-- Added 'id="completeBtn"' and 'disabled' for UX logic -->
-                        <button type="button" class="btn btn-royal rounded-pill px-5 py-3 shadow fw-bold" id="completeBtn" data-bs-toggle="modal" data-bs-target="#enrollSuccessModal" disabled>
+                        <button type="submit" class="btn btn-royal rounded-pill px-5 py-3 shadow fw-bold" id="completeBtn">
                             Complete Enrollment <i class="fas fa-check-circle ms-2"></i>
                         </button>
                     </div>

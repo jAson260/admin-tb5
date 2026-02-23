@@ -1,4 +1,31 @@
 <?php 
+// --- START: SENIOR DEV UPLOAD LOGIC ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['new_avatar'])) {
+    $targetDir = "../uploads/profiles/";
+    // Ensure directory exists
+    if (!file_exists($targetDir)) { mkdir($targetDir, 0777, true); }
+
+    $fileType = strtolower(pathinfo($_FILES["new_avatar"]["name"], PATHINFO_EXTENSION));
+    $newFileName = "profile_" . $_SESSION['user_id'] . "_" . time() . "." . $fileType;
+    $targetFilePath = $targetDir . $newFileName;
+    
+    // Allowed formats
+    $allowTypes = array('jpg', 'png', 'jpeg');
+    if (in_array($fileType, $allowTypes)) {
+        if (move_uploaded_file($_FILES["new_avatar"]["tmp_name"], $targetFilePath)) {
+            // DATABASE UPDATE
+            try {
+                $updatePic = $pdo->prepare("UPDATE studentinfos SET profile_pic = ? WHERE Id = ?");
+                if ($updatePic->execute([$newFileName, $_SESSION['user_id']])) {
+                    // Force refresh page with success parameter
+                    header("Location: useraccount.php?success=1");
+                    exit;
+                }
+            } catch(PDOException $e) { $msg = "DB Error: " . $e->getMessage(); }
+        } else { $msg = "Error uploading your file."; }
+    } else { $msg = "Only JPG, JPEG, & PNG are allowed."; }
+}
+// --- END: SENIOR DEV UPLOAD LOGIC ---
 session_start();
 
 // Check if user is logged in
@@ -13,12 +40,14 @@ $msg = "";
 $user_data = [];
 
 try {
-    // Fetch user data from database
+    // Fetch user data from database (including educational background)
     $stmt = $pdo->prepare("
         SELECT 
             Id, ULI, FirstName, LastName, MiddleName, ExtensionName,
             Email, Sex, BirthDate, ContactNo, Age,
             RegionName, ProvinceName, CityName, BarangayName,
+            SecondarySchool, SecondaryYearCompleted,
+            TertiarySchool, TertiaryYearCompleted,
             Status
         FROM studentinfos 
         WHERE Id = ?
@@ -45,12 +74,12 @@ try {
             'province' => $userData['ProvinceName'],
             'city' => $userData['CityName'],
             'barangay' => $userData['BarangayName'],
+            'secondary_school' => $userData['SecondarySchool'] ?? '',
+            'secondary_year' => $userData['SecondaryYearCompleted'] ?? '',
+            'tertiary_school' => $userData['TertiarySchool'] ?? '',
+            'tertiary_year' => $userData['TertiaryYearCompleted'] ?? '',
             'status' => $userData['Status'],
-            'profile_pic' => '../img/default-avatar.png', // Default avatar
-            'secondary_school' => '',
-            'secondary_year' => '',
-            'tertiary_school' => '',
-            'tertiary_year' => ''
+            'profile_pic' => '../img/default-avatar.png' // Default avatar
         ];
     } else {
         // User not found
@@ -116,235 +145,330 @@ include '../includes/sidebar.php';
             </div>
         <?php endif; ?>
 
-        <div class="row">
-            <!-- LEFT SIDE: PROFILE CARD -->
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm text-center p-4 mb-4 rounded-4">
-                    <div class="position-relative d-inline-block mx-auto">
-                        <img src="<?php echo htmlspecialchars($user_data['profile_pic']); ?>" 
+<!-- Main Container Wrapper -->
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        
+        <!-- LEFT SIDE: PROFILE CARD (Avatar & Basic Info) -->
+        <div class="col-lg-4 col-md-5">
+            <div class="card border-0 shadow-sm p-4 rounded-4 text-center text-md-start">
+                
+                <!-- Avatar Container -->
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <div class="position-relative d-inline-block mb-3" style="width: 130px; height: 130px;">
+                        <?php 
+                            $avatarPath = (!empty($user_data['profile_pic']) && $user_data['profile_pic'] !== '../img/default-avatar.png') 
+                                ? "../uploads/profiles/" . $user_data['profile_pic'] 
+                                : "../img/default-avatar.png";
+                        ?>
+                        <img src="<?php echo htmlspecialchars($avatarPath); ?>" 
                              alt="Avatar" 
-                             class="rounded-circle border border-4 border-white shadow-sm" 
-                             style="width: 140px; height: 140px; object-fit: cover;">
-                        <button class="btn btn-sm btn-royal position-absolute bottom-0 end-0 rounded-circle" 
+                             class="rounded-circle border border-4 border-white shadow-sm w-100 h-100" 
+                             style="object-fit: cover;">
+                        
+                        <!-- Camera Button -->
+                        <button class="btn btn-sm btn-royal position-absolute bottom-0 end-0 rounded-circle border-2 border-white shadow-sm" 
+                                style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;"
                                 data-bs-toggle="modal" data-bs-target="#uploadModal">
                             <i class="fas fa-camera"></i>
                         </button>
                     </div>
-                    <h5 class="mt-3 mb-0 fw-bold">
-                        <?php 
-                        echo htmlspecialchars($user_data['surname'] . ", " . $user_data['first_name']);
-                        if (!empty($user_data['mi'])) echo " " . htmlspecialchars($user_data['mi']) . ".";
-                        if (!empty($user_data['extension'])) echo " " . htmlspecialchars($user_data['extension']);
-                        ?>
-                    </h5>
-                    <p class="text-muted small mb-3">ULI: <?php echo htmlspecialchars($user_data['uli']); ?></p>
-                    <span class="badge bg-<?php echo ($user_data['status'] === 'Approved') ? 'success' : 'warning'; ?> rounded-pill px-3 py-2">
-                        <?php echo htmlspecialchars($user_data['status']); ?> Account
-                    </span>
+
+                    <!-- Trainee Basic Info -->
+                    <div class="mt-2">
+                        <h5 class="fw-bold text-dark mb-1 text-uppercase">
+                            <?php echo htmlspecialchars($user_data['surname'] . ", " . $user_data['first_name']); ?>
+                        </h5>
+                        <p class="text-muted mb-2" style="font-size: 0.9rem;">
+                            <span class="badge bg-light text-dark border fw-normal">ULI: <?php echo htmlspecialchars($user_data['uli']); ?></span>
+                        </p>
+                        
+                        <!-- Verification Status -->
+                        <div class="mt-2">
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2" style="font-size: 11px;">
+                                <i class="fas fa-check-circle me-1"></i> VERIFIED ACCOUNT
+                            </span>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- RIGHT SIDE: INTEGRATED DETAILS FORM -->
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 mb-5">
-                    <div class="card-header bg-white py-3">
-                        <h6 class="mb-0 fw-bold text-royal"><i class="fas fa-edit me-2"></i>Update Official Details</h6>
-                    </div>
-                    <div class="card-body p-4">
-                        <form action="useraccount.php" method="POST">
-
-                            <!-- SECTION: NAME OF TRAINEE (Read Only) -->
-                            <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-                                <i class="fas fa-user-tag me-2"></i>Name of Trainee <i class="fas fa-lock ms-1"></i>
-                            </h6>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['surname']); ?>" readonly>
-                                        <label>Surname</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['first_name']); ?>" readonly>
-                                        <label>First Name</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['mi']); ?>" readonly>
-                                        <label>M.I.</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['extension']); ?>" readonly>
-                                        <label>Ext.</label>
-                                    </div>
-                                </div>
-                            </div>
-
-    <!-- SECTION 3: PERSONAL DETAILS (OFFICIAL RECORD - LOCKED) -->
-<h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-    <i class="fas fa-info-circle me-2"></i>Personal Details <i class="fas fa-lock ms-1 text-muted small"></i>
-</h6>
-
-<div class="row g-2 mb-4"> 
-    <!-- Sex Selection - LOCKED -->
-    <div class="col-md-2">
-        <div class="form-floating form-floating-sm">
-            <select name="sex" class="form-select bg-light" id="sexSelect" disabled>
-                <option value="Male" <?php echo ($user_data['sex'] == 'Male') ? 'selected':''; ?>>Male</option>
-                <option value="Female" <?php echo ($user_data['sex'] == 'Female') ? 'selected':''; ?>>Female</option>
-            </select>
-            <label for="sexSelect">Sex</label>
-        </div>
-    </div>
-    
-    <!-- Date of Birth - LOCKED -->
-    <div class="col-md-3">
-        <div class="form-floating form-floating-sm">
-            <input type="date" name="dob" class="form-control bg-light" id="dobInput" value="<?php echo htmlspecialchars($user_data['dob']); ?>" readonly>
-            <label for="dobInput">Date of Birth</label>
-        </div>
-    </div>
-
-    <!-- Phone Number - LOCKED -->
-    <div class="col-md-4">
-        <div class="form-floating form-floating-sm">
-            <input type="text" name="phone" class="form-control bg-light" id="phoneInput" value="<?php echo htmlspecialchars($user_data['phone']); ?>" placeholder="639..." readonly>
-            <label for="phoneInput">Phone Number</label>
-        </div>
-    </div>
-
-    <!-- Email - LOCKED -->
-    <div class="col-md-3">
-        <div class="form-floating form-floating-sm">
-            <input type="email" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['email']); ?>" readonly>
-            <label>Email</label>
-        </div>
-    </div>
-</div>
-
-                            <!-- SECTION: PLACE OF BIRTH -->
-                            <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-                                <i class="fas fa-map-marker-alt me-2"></i>Complete Address
-                            </h6>
-                            <div class="row g-2 mb-4">
-                                <div class="col-md-3">
-                                    <div class="form-floating form-floating-sm">
-                                        <select name="region" class="form-select" id="regionSelect" required>
-                                            <option value="NCR" <?php echo ($user_data['region'] == 'NCR') ? 'selected':''; ?>>NCR</option>
-                                            <option value="Region IV-A" <?php echo ($user_data['region'] == 'Region IV-A') ? 'selected':''; ?>>Region IV-A</option>
-                                        </select>
-                                        <label for="regionSelect">Region</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-floating form-floating-sm">
-                                        <select name="province" class="form-select" id="provinceSelect" required>
-                                            <option value="Laguna" <?php echo ($user_data['province'] == 'Laguna') ? 'selected':''; ?>>Laguna</option>
-                                            <option value="Batangas" <?php echo ($user_data['province'] == 'Batangas') ? 'selected':''; ?>>Batangas</option>
-                                        </select>
-                                        <label for="provinceSelect">Province</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-floating form-floating-sm">
-                                        <select name="city" class="form-select" id="citySelect" required>
-                                            <option value="San Pablo" <?php echo ($user_data['city'] == 'San Pablo') ? 'selected':''; ?>>San Pablo</option>
-                                            <option value="Calamba" <?php echo ($user_data['city'] == 'Calamba') ? 'selected':''; ?>>Calamba</option>
-                                        </select>
-                                        <label for="citySelect">Municipality/City</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-floating form-floating-sm">
-                                        <select name="barangay" class="form-select" id="brgySelect" required>
-                                            <option value="Brgy VII-A" <?php echo ($user_data['barangay'] == 'Brgy VII-A') ? 'selected':''; ?>>Brgy VII-A</option>
-                                        </select>
-                                        <label for="brgySelect">Barangay</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                           <!-- SECTION 5: EDUCATIONAL BACKGROUND (OFFICIAL RECORD - LOCKED) -->
-<h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-    <i class="fas fa-graduation-cap me-2"></i>Educational Background <i class="fas fa-lock ms-1"></i>
-</h6>
-
-<div class="row g-3 mb-3">
-    <div class="col-md-9">
-        <div class="form-floating">
-            <input type="text" name="secondary_school" class="form-control bg-light" id="secSchool" 
-                   value="<?php echo htmlspecialchars($user_data['secondary_school']); ?>" readonly>
-            <label for="secSchool">Secondary School Attended</label>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="form-floating">
-            <input type="number" name="secondary_year" class="form-control bg-light text-center" id="secYear" 
-                   value="<?php echo htmlspecialchars($user_data['secondary_year']); ?>" readonly>
-            <label for="secYear">Year Completed</label>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-9">
-        <div class="form-floating">
-            <input type="text" name="tertiary_school" class="form-control bg-light" id="tertSchool" 
-                   value="<?php echo htmlspecialchars($user_data['tertiary_school']); ?>" readonly>
-            <label for="tertSchool">Tertiary School Attended (College / Vocational)</label>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="form-floating">
-            <input type="number" name="tertiary_year" class="form-control bg-light text-center" id="tertYear" 
-                   value="<?php echo htmlspecialchars($user_data['tertiary_year']); ?>" readonly>
-            <label for="tertYear">Year Completed</label>
-        </div>
-    </div>
-</div>
-
-                            <!-- ACTION BUTTON -->
-                            <div class="text-end border-top pt-4">
-                                <p class="text-muted small mb-3 fst-italic">
-                                    <i class="fas fa-info-circle me-1"></i> 
-                                    Some fields are locked. To update your official records, click the button below to notify the Admin.
-                                </p>
-                                <button type="submit" name="update_profile" class="btn btn-royal rounded-pill px-5 py-2 fw-bold shadow-sm">
-                                    Send to Admin for Approval <i class="fas fa-paper-plane ms-2"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                <hr class="my-4 opacity-50">
+                <div class="small text-muted">
+                    <p class="mb-1"><i class="fas fa-calendar-alt me-2"></i> Registered: <?php echo date('M Y'); ?></p>
+                    <p class="mb-0"><i class="fas fa-user-graduate me-2"></i> Active Trainee</p>
                 </div>
             </div>
         </div>
+
+        <!-- RIGHT SIDE: INTEGRATED DETAILS FORM -->
+        <div class="col-lg-8 col-md-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 border-bottom-0">
+                    <h6 class="mb-0 fw-bold text-royal"><i class="fas fa-edit me-2"></i>Official Personal Details</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form action="useraccount.php" method="POST">
+
+                        <!-- SECTION 1: NAME OF TRAINEE (Locked) -->
+                        <div class="d-flex align-items-center mb-3">
+                            <h6 class="fw-bold mb-0 text-secondary small text-uppercase">
+                                <i class="fas fa-user-tag me-2"></i>Name of Trainee
+                            </h6>
+                            <span class="ms-2 badge bg-light text-muted border-0" style="font-size: 10px;"><i class="fas fa-lock me-1"></i>LOCKED</span>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['surname']); ?>" readonly>
+                                    <label>Surname</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light text-uppercase" value="<?php echo htmlspecialchars($user_data['first_name']); ?>" readonly>
+                                    <label>First Name</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['mi']); ?>" readonly>
+                                    <label>M.I.</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light text-uppercase text-center" value="<?php echo htmlspecialchars($user_data['extension']); ?>" readonly>
+                                    <label>Ext.</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: PERSONAL DETAILS (Locked) -->
+                        <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
+                            <i class="fas fa-info-circle me-2"></i>Personal Details
+                        </h6>
+                        <div class="row g-2 mb-4"> 
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select class="form-select bg-light" disabled>
+                                        <option value="Male" <?php echo ($user_data['sex'] == 'Male') ? 'selected':''; ?>>Male</option>
+                                        <option value="Female" <?php echo ($user_data['sex'] == 'Female') ? 'selected':''; ?>>Female</option>
+                                    </select>
+                                    <label>Sex</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="date" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['dob']); ?>" readonly>
+                                    <label>Date of Birth</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['phone']); ?>" readonly>
+                                    <label>Phone Number</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['email']); ?>" readonly>
+                                    <label>Email</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: ADDRESS (Editable) -->
+                        <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
+                            <i class="fas fa-map-marker-alt me-2"></i>Complete Address
+                        </h6>
+                        <div class="row g-2 mb-4">
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select name="region" class="form-select" id="regionSelect" required>
+                                        <option value="NCR" <?php echo ($user_data['region'] == 'NCR') ? 'selected':''; ?>>NCR</option>
+                                        <option value="Region IV-A" <?php echo ($user_data['region'] == 'Region IV-A') ? 'selected':''; ?>>Region IV-A</option>
+                                    </select>
+                                    <label>Region</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select name="province" class="form-select" id="provinceSelect" required>
+                                        <option value="Laguna" <?php echo ($user_data['province'] == 'Laguna') ? 'selected':''; ?>>Laguna</option>
+                                        <option value="Batangas" <?php echo ($user_data['province'] == 'Batangas') ? 'selected':''; ?>>Batangas</option>
+                                    </select>
+                                    <label>Province</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select name="city" class="form-select" id="citySelect" required>
+                                        <option value="San Pablo" <?php echo ($user_data['city'] == 'San Pablo') ? 'selected':''; ?>>San Pablo</option>
+                                        <option value="Calamba" <?php echo ($user_data['city'] == 'Calamba') ? 'selected':''; ?>>Calamba</option>
+                                    </select>
+                                    <label>Municipality</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <select name="barangay" class="form-select" id="brgySelect" required>
+                                        <option value="Brgy VII-A" <?php echo ($user_data['barangay'] == 'Brgy VII-A') ? 'selected':''; ?>>Brgy VII-A</option>
+                                    </select>
+                                    <label>Barangay</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 4: EDUCATIONAL BACKGROUND (Locked) -->
+                        <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
+                            <i class="fas fa-graduation-cap me-2"></i>Educational Background <i class="fas fa-lock ms-1 text-muted small"></i>
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-9">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['secondary_school']); ?>" readonly>
+                                    <label>Secondary School Attended</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control bg-light text-center" value="<?php echo htmlspecialchars($user_data['secondary_year']); ?>" readonly>
+                                    <label>Year Completed</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-9">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['tertiary_school']); ?>" readonly>
+                                    <label>Tertiary School (College/Vocational)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control bg-light text-center" value="<?php echo htmlspecialchars($user_data['tertiary_year']); ?>" readonly>
+                                    <label>Year Completed</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ACTION BUTTON -->
+                        <div class="text-end border-top pt-4 mt-2">
+                            <p class="text-muted small mb-3 fst-italic">
+                                <i class="fas fa-info-circle me-1 text-primary"></i> 
+                                Some fields are locked. To update official records, please contact the Admin.
+                            </p>
+                            <button type="button" id="btnSubmitApproval" class="btn btn-royal rounded-pill px-5 py-2 fw-bold shadow-sm">
+                                Send to Admin for Approval <i class="fas fa-paper-plane ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Modal for Profile Picture -->
+<!-- Modal remains outside for proper layering -->
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
             <div class="modal-header border-bottom-0 p-4">
-                <h5 class="modal-title fw-bold">Update Profile Picture</h5>
+                <h5 class="modal-title fw-bold"><i class="fas fa-image me-2"></i>Change Profile Picture</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="useraccount.php" method="POST" enctype="multipart/form-data">
-                <div class="modal-body px-4 pb-4">
-                    <input type="file" name="new_avatar" class="form-control rounded-3" accept="image/*" required>
-                    <div class="form-text mt-2">Uploading a new picture will notify the Admin for verification.</div>
+                <div class="modal-body px-4 text-center">
+                    <div class="mb-3">
+                        <img id="imgPreview" src="<?php echo $avatarPath; ?>" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
+                    </div>
+                    <label class="btn btn-outline-primary rounded-pill px-4 mb-2" style="cursor: pointer;">
+                        <i class="fas fa-file-import me-2"></i> Select New Image
+                        <input type="file" name="new_avatar" id="avatarInput" hidden accept="image/*" required onchange="previewImage(this);">
+                    </label>
+                    <p class="text-muted" style="font-size: 11px;">Recommended size: Square (e.g. 500x500px). JPG or PNG only.</p>
                 </div>
-                <div class="modal-footer border-top-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-royal rounded-pill px-4">Send Request</button>
+                <div class="modal-footer border-top-0 p-4 pt-0 justify-content-center">
+                    <button type="submit" class="btn btn-royal rounded-pill px-5 shadow-sm fw-bold">Confirm & Upload</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- INSTITUTIONAL SUCCESS MODAL -->
+<div class="modal fade" id="approvalModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body text-center p-5">
+                <!-- Premium Success Icon Container -->
+                <div class="mx-auto mb-4 bg-success bg-opacity-10 d-flex align-items-center justify-content-center rounded-circle" style="width: 100px; height: 100px;">
+                    <i class="fas fa-check-circle text-success" style="font-size: 60px;"></i>
+                </div>
+                
+                <h4 class="fw-bold text-dark mb-2">Successfully Sent!</h4>
+                <p class="text-muted mb-4">Your request has been submitted. Wait for the admin's approval to finalize your record updates.</p>
+                
+                <!-- "OK" button redirects or submits the actual form -->
+                <button type="button" class="btn btn-royal rounded-pill px-5 py-2 fw-bold shadow-sm" id="modalOkBtn">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const btnSubmit = document.getElementById('btnSubmitApproval');
+    const approvalModal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    const modalOkBtn = document.getElementById('modalOkBtn');
+    const profileForm = btnSubmit.closest('form');
+
+    // Handle Button Click
+    btnSubmit.addEventListener('click', function() {
+        // Trigger standard browser validation (Check for required regions/barangay)
+        if (profileForm.checkValidity()) {
+            approvalModal.show();
+        } else {
+            profileForm.reportValidity(); // Highlight missing fields
+        }
+    });
+
+    // Handle Modal OK Click
+    modalOkBtn.addEventListener('click', function() {
+        // Option 1: Submit the form to useraccount.php
+        profileForm.submit(); 
+        
+        // Option 2 (If you just want UI):
+        // approvalModal.hide();
+    });
+});
+</script>
+                        </form>
+    <script>
+    // JS Logic to show trainee a preview of the photo before they upload it
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imgPreview');
+                preview.src = e.target.result;
+                preview.style.display = 'inline-block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
 <?php include '../includes/footer.php'; ?>

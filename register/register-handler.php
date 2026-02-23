@@ -80,13 +80,20 @@ try {
     $street = '';
     $status = 'Pending';
     
+    // Convert empty year values to NULL
+    $secondaryYear = !empty($secondaryYear) ? (int)$secondaryYear : null;
+    $tertiaryYear = !empty($tertiaryYear) ? (int)$tertiaryYear : null;
+    
     // Insert into database
     $sql = "INSERT INTO studentinfos (
         ULI, FirstName, LastName, MiddleName, ExtensionName, Email, 
         Nationality, BirthDate, Sex, CivilStatus, Employment, 
         Age, EntryDate, BirthPlace, BarangayName, CityName, 
-        ContactNo, District, ProvinceName, RegionName, Street, Password, Status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        ContactNo, District, ProvinceName, RegionName, Street, 
+        SecondarySchool, SecondaryYearCompleted, 
+        TertiarySchool, TertiaryYearCompleted,
+        Password, Status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $pdo->prepare($sql);
     
@@ -94,7 +101,10 @@ try {
         $uli, $firstName, $lastName, $middleName, $extension, $email,
         $nationality, $birthDateTime, $sex, $civilStatus, $employment,
         $age, $entryDate, $birthPlace, $barangay, $city,
-        $phone, $district, $province, $region, $street, $hashedPassword, $status
+        $phone, $district, $province, $region, $street,
+        $secondarySchool, $secondaryYear, 
+        $tertiarySchool, $tertiaryYear,
+        $hashedPassword, $status
     ]);
     
     if ($result) {
