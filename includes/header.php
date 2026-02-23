@@ -321,10 +321,10 @@
         </li>
         <li><hr class="dropdown-divider"></li>
         <li>
-            <a class="dropdown-item text-danger small" href="<?php echo $root; ?>index.php">
-                <i class="fas fa-sign-out-alt me-2"></i>Logout
-            </a>
-        </li>
+    <a class="dropdown-item text-danger small" href="<?php echo $root; ?>login/logout.php">
+        <i class="fas fa-sign-out-alt me-2"></i>Logout
+    </a>
+</li>
     </ul>
 </div>
         </div>

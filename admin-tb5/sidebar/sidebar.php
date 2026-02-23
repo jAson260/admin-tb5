@@ -1,3 +1,6 @@
+<?php
+// filepath: c:\laragon\www\admin-tb5\admin-tb5\sidebar\sidebar.php
+?>
 <style>
     .sidebar {
         position: fixed;
@@ -60,6 +63,18 @@
     .menu-label {
         flex: 1;
     }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+        }
+        
+        .sidebar.show {
+            transform: translateX(0);
+        }
+    }
 </style>
 
 <?php
@@ -77,7 +92,7 @@ function isActive($page) {
     <ul class="sidebar-menu">
         <!-- Dashboard -->
         <li>
-            <a href="../admin-dashboard/admin-dashboard.php" class="<?php echo isActive('admin-dashboard.php'); ?>">
+            <a href="../admin-dashboard/" class="<?php echo isActive('admin-dashboard.php'); ?>">
                 <i class="bi bi-speedometer2"></i>
                 <span class="menu-label">Dashboard</span>
             </a>
@@ -85,7 +100,7 @@ function isActive($page) {
         
         <!-- Logs -->
         <li>
-            <a href="../logs/logs.php" class="<?php echo isActive('logs.php'); ?>">
+            <a href="../logs/" class="<?php echo isActive('logs.php'); ?>">
                 <i class="bi bi-journal-text"></i>
                 <span class="menu-label">Logs</span>
             </a>
@@ -93,7 +108,7 @@ function isActive($page) {
         
         <!-- Student Records -->
         <li>
-            <a href="../student-records/student-records.php" class="<?php echo isActive('student-records.php'); ?>">
+            <a href="../student-records/" class="<?php echo isActive('student-records.php'); ?>">
                 <i class="bi bi-person-lines-fill"></i>
                 <span class="menu-label">Student Records</span>
             </a>
@@ -101,7 +116,7 @@ function isActive($page) {
         
         <!-- Account Management -->
         <li>
-            <a href="../account-management/account-management.php" class="<?php echo isActive('account-management.php'); ?>">
+            <a href="../account-management/" class="<?php echo isActive('account-management.php'); ?>">
                 <i class="bi bi-people-fill"></i>
                 <span class="menu-label">Account Management</span>
             </a>
@@ -109,7 +124,7 @@ function isActive($page) {
         
         <!-- Batch Management -->
         <li>
-            <a href="../create-batch/create-batch.php" class="<?php echo isActive('create-batch.php'); ?>">
+            <a href="../create-batch/" class="<?php echo isActive('create-batch.php'); ?>">
                 <i class="bi bi-collection"></i>
                 <span class="menu-label">Batch Management</span>
             </a>
@@ -117,7 +132,7 @@ function isActive($page) {
         
         <!-- Course Management -->
         <li>
-            <a href="../course-creation/course-creation.php" class="<?php echo isActive('course-creation.php'); ?>">
+            <a href="../course-creation/" class="<?php echo isActive('course-creation.php'); ?>">
                 <i class="bi bi-book"></i>
                 <span class="menu-label">Course Management</span>
             </a>
@@ -125,7 +140,7 @@ function isActive($page) {
         
         <!-- TOR -->
         <li>
-            <a href="../tor-grades/tor-grades.php" class="<?php echo isActive('tor-grades.php'); ?>">
+            <a href="../tor-grades/" class="<?php echo isActive('tor-grades.php'); ?>">
                 <i class="bi bi-clipboard-data"></i>
                 <span class="menu-label">TOR</span>
             </a>
@@ -133,7 +148,7 @@ function isActive($page) {
         
         <!-- Document Management -->
         <li>
-            <a href="../documents-approval/documents-approval.php" class="<?php echo isActive('documents-approval.php'); ?>">
+            <a href="../documents-approval/" class="<?php echo isActive('documents-approval.php'); ?>">
                 <i class="bi bi-file-earmark-check"></i>
                 <span class="menu-label">Document Management</span>
             </a>
@@ -141,7 +156,7 @@ function isActive($page) {
         
         <!-- Print Management -->
         <li>
-            <a href="../print-management/print-management.php" class="<?php echo isActive('print-management.php'); ?>">
+            <a href="../print-management/" class="<?php echo isActive('print-management.php'); ?>">
                 <i class="bi bi-printer-fill"></i>
                 <span class="menu-label">Print Management</span>
             </a>

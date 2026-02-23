@@ -1,5 +1,7 @@
 <?php
-// Include header
+session_start();
+require_once('../../includes/rbac-guard.php');
+
 include('../header/header.php');
 
 

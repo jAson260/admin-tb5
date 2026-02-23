@@ -145,7 +145,7 @@
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item text-danger" href="../../index.php">
+                        <a class="dropdown-item text-danger" href="/login/logout">
                             <i class="bi bi-box-arrow-right me-2"></i>Logout
                         </a>
                     </li>

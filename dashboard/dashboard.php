@@ -1,5 +1,6 @@
 <?php 
 session_start();
+require_once('../includes/rbac-guard.php');
 
 
 // Check if user is logged in
