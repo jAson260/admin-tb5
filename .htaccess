@@ -1,0 +1,50 @@
+RewriteEngine On
+
+# Prevent directory listing
+Options -Indexes
+
+# Set default pages for directories
+DirectoryIndex index.php login.php dashboard.php admin-dashboard.php logs.php student-records.php account-management.php print-management.php documents-approval.php tor-grades.php course-creation.php create-batch.php
+
+# Custom Error Pages
+ErrorDocument 404 /admin-tb5/404.php
+ErrorDocument 403 /admin-tb5/403.php
+ErrorDocument 500 /admin-tb5/500.php
+
+# Redirect /login to /login/login.php
+RewriteRule ^login/?$ login/login.php [L]
+
+# Redirect /logout to /login/logout.php (FIXED - was pointing to admin-tb5/logout/logout.php)
+RewriteRule ^logout/?$ login/logout.php [L]
+
+# Redirect /dashboard to /dashboard/dashboard.php (Student Dashboard)
+RewriteRule ^dashboard/?$ dashboard/dashboard.php [L]
+
+# Redirect /admin to /admin-tb5/admin-dashboard/admin-dashboard.php (Admin Dashboard)
+RewriteRule ^admin/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
+
+# Admin Panel Pages - Clean URL Redirects
+RewriteRule ^admin-tb5/admin-dashboard/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
+RewriteRule ^admin-tb5/logs/?$ admin-tb5/logs/logs.php [L]
+RewriteRule ^admin-tb5/student-records/?$ admin-tb5/student-records/student-records.php [L]
+RewriteRule ^admin-tb5/account-management/?$ admin-tb5/account-management/account-management.php [L]
+RewriteRule ^admin-tb5/print-management/?$ admin-tb5/print-management/print-management.php [L]
+RewriteRule ^admin-tb5/documents-approval/?$ admin-tb5/documents-approval/documents-approval.php [L]
+RewriteRule ^admin-tb5/tor-grades/?$ admin-tb5/tor-grades/tor-grades.php [L]
+RewriteRule ^admin-tb5/course-creation/?$ admin-tb5/course-creation/course-creation.php [L]
+RewriteRule ^admin-tb5/create-batch/?$ admin-tb5/create-batch/create-batch.php [L]
+
+# Remove this incorrect line (it was pointing login to logout!)
+# RewriteRule ^admin-tb5/login/?$ admin-tb5/login/logout.php [L]
+
+# Hide .php extensions site-wide
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^/]+)/([^/]+)$ $1/$2.php [L]
+
+# Redirect if .php is accessed directly (EXCEPT specific files)
+RewriteCond %{THE_REQUEST} ^GET.*\.php [NC]
+RewriteCond %{REQUEST_URI} !^/admin-tb5/(404|403|500|hash-password)\.php$
+RewriteCond %{REQUEST_URI} !/admin-tb5/login/(login-handler|logout|refresh-session)\.php$
+RewriteCond %{REQUEST_URI} !(admin-dashboard|logs|student-records|account-management|print-management|documents-approval|tor-grades|course-creation|create-batch)\.php
+RewriteRule ^(.*)\.php$ /$1 [R=301,L]
