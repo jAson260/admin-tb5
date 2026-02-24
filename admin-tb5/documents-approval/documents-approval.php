@@ -113,31 +113,31 @@ include('../sidebar/sidebar.php');
                     </div>
                     
                     <!-- Status Filter -->
-<div class="col-md-2">
-    <select class="form-select" id="schoolFilter">
-        <option value="" selected disabled>School</option>
-        <option value="tb5">TB5</option>
-        <option value="bbi">BBI</option>
-    </select>
-</div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="schoolFilter">
+                            <option value="" selected disabled>School</option>
+                            <option value="tb5">TB5</option>
+                            <option value="bbi">BBI</option>
+                        </select>
+                    </div>
                     
                     <!-- Course Type Filter -->
-<div class="col-md-3">
-    <select class="form-select" id="documentTypeFilter" disabled>
-        <option value="" selected>Course</option>
-    </select>
-</div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="documentTypeFilter" disabled>
+                            <option value="" selected>Course</option>
+                        </select>
+                    </div>
                     
                     <!-- Batch Filter -->
-                  <div class="col-md-2">
-                 <select class="form-select" id="batchFilter">
-                 <option value="" selected disabled>Batch</option>
-                 <option value="batch-2024-01">Batch 2024-01</option>
-                 <option value="batch-2024-02">Batch 2024-02</option>
-                 <option value="batch-2025-01">Batch 2025-01</option>
-                 <option value="batch-2026-01">Batch 2026-01</option>
-              </select>
-</div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="batchFilter">
+                            <option value="" selected disabled>Batch</option>
+                            <option value="batch-2024-01">Batch 2024-01</option>
+                            <option value="batch-2024-02">Batch 2024-02</option>
+                            <option value="batch-2025-01">Batch 2025-01</option>
+                            <option value="batch-2026-01">Batch 2026-01</option>
+                        </select>
+                    </div>
                     
                     <!-- Reset Button -->
                     <div class="col-md-1">
@@ -153,17 +153,6 @@ include('../sidebar/sidebar.php');
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">Submitted Documents</h5>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-download me-1"></i> Export
-                    </button>
-                    <select class="form-select form-select-sm" id="entriesPerPage" style="width: auto;">
-                        <option value="10">10 per page</option>
-                        <option value="25">25 per page</option>
-                        <option value="50">50 per page</option>
-                        <option value="100">100 per page</option>
-                    </select>
-                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -175,6 +164,8 @@ include('../sidebar/sidebar.php');
                                 </th>
                                 <th>Student Name</th>
                                 <th>Document Type</th>
+                                <th>Course</th>
+                                <th>School</th>
                                 <th>Submission Date</th>
                                 <th>File Size</th>
                                 <th>Status</th>
@@ -182,315 +173,9 @@ include('../sidebar/sidebar.php');
                             </tr>
                         </thead>
                         <tbody id="tableBody">
-                            <!-- Row 1 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Juan Dela Cruz</div>
-                                            <small class="text-muted">ID: 2024-001</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-primary me-1"></i>
-                                    Birth Certificate
-                                </td>
-                                <td>Feb 10, 2026</td>
-                                <td>2.4 MB</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(1)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Approve" onclick="approveDocument(1)">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Reject" onclick="rejectDocument(1)">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 2 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Maria Santos</div>
-                                            <small class="text-muted">ID: 2024-002</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-info me-1"></i>
-                                    ID Card
-                                </td>
-                                <td>Feb 11, 2026</td>
-                                <td>1.8 MB</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(2)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Approve" onclick="approveDocument(2)">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Reject" onclick="rejectDocument(2)">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 3 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Pedro Reyes</div>
-                                            <small class="text-muted">ID: 2024-003</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-success me-1"></i>
-                                    Transcript
-                                </td>
-                                <td>Feb 12, 2026</td>
-                                <td>3.2 MB</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(3)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Approve" onclick="approveDocument(3)">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Reject" onclick="rejectDocument(3)">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 4 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Ana Garcia</div>
-                                            <small class="text-muted">ID: 2024-004</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-warning me-1"></i>
-                                    Diploma
-                                </td>
-                                <td>Feb 09, 2026</td>
-                                <td>2.1 MB</td>
-                                <td><span class="badge bg-success">Approved</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(4)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Download" onclick="downloadDocument(4)">
-                                            <i class="bi bi-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 5 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Carlos Martinez</div>
-                                            <small class="text-muted">ID: 2024-005</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-danger me-1"></i>
-                                    Medical Certificate
-                                </td>
-                                <td>Feb 08, 2026</td>
-                                <td>1.5 MB</td>
-                                <td><span class="badge bg-danger">Rejected</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(5)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-info" title="View Reason" onclick="viewReason(5)">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 6 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Isabella Rodriguez</div>
-                                            <small class="text-muted">ID: 2024-006</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-primary me-1"></i>
-                                    Birth Certificate
-                                </td>
-                                <td>Feb 13, 2026</td>
-                                <td>2.7 MB</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(6)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Approve" onclick="approveDocument(6)">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Reject" onclick="rejectDocument(6)">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 7 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Miguel Torres</div>
-                                            <small class="text-muted">ID: 2024-007</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-success me-1"></i>
-                                    Transcript
-                                </td>
-                                <td>Feb 07, 2026</td>
-                                <td>3.8 MB</td>
-                                <td><span class="badge bg-success">Approved</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(7)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Download" onclick="downloadDocument(7)">
-                                            <i class="bi bi-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Row 8 -->
-                            <tr>
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Sofia Fernandez</div>
-                                            <small class="text-muted">ID: 2024-008</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <i class="bi bi-file-earmark-text text-info me-1"></i>
-                                    ID Card
-                                </td>
-                                <td>Feb 12, 2026</td>
-                                <td>1.9 MB</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="View" onclick="viewDocument(8)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Approve" onclick="approveDocument(8)">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Reject" onclick="rejectDocument(8)">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Data will be loaded via AJAX -->
                         </tbody>
                     </table>
-                </div>
-            </div>
-            <div class="card-footer bg-white border-top-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
-                        Showing <span id="showingStart">1</span> to <span id="showingEnd">8</span> of <span id="totalEntries">24</span> entries
-                    </div>
-                    <nav>
-                        <ul class="pagination mb-0" id="pagination">
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1">Previous</a>
-                            </li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">Next</a>
-                            </li>
-                        </ul>
-                    </nav>
                 </div>
             </div>
         </div>
@@ -538,7 +223,14 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
+
+
+
+
+
 <script>
+let documentsTable;
+
 // Course options for each school
 const courseOptions = {
     tb5: [
@@ -558,130 +250,386 @@ const courseOptions = {
     ]
 };
 
-// Search functionality
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const tableRows = document.querySelectorAll('#tableBody tr');
+// Initialize DataTable on page load
+$(document).ready(function() {
+    console.log('Page loaded, jQuery version:', $.fn.jquery);
+    console.log('DataTables available:', typeof $.fn.DataTable);
     
-    tableRows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    if (typeof $.fn.DataTable === 'undefined') {
+        console.error('DataTables library not loaded!');
+        alert('DataTables library failed to load. Check console.');
+        return;
+    }
+    
+    console.log('Initializing DataTables...');
+    
+    documentsTable = $('#documentsTable').DataTable({
+        ajax: {
+            url: 'get-documents.php',
+            dataSrc: function(json) {
+                console.log('AJAX Response:', json);
+                
+                if (!json) {
+                    console.error('No response from server');
+                    return [];
+                }
+                
+                if (json.success) {
+                    console.log('Documents count:', json.documents.length);
+                    updateStatistics(json.statistics);
+                    return json.documents;
+                } else {
+                    console.error('Error from server:', json.message);
+                    alert('Error loading documents: ' + json.message);
+                    return [];
+                }
+            },
+            error: function(xhr, error, thrown) {
+                console.error('AJAX Error:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    error: error,
+                    thrown: thrown,
+                    responseText: xhr.responseText
+                });
+                alert('Failed to load documents. Check console for details.');
+            }
+        },
+        columns: [
+            {
+                data: null,
+                orderable: false,
+                render: function(data, type, row) {
+                    return `<input type="checkbox" class="form-check-input row-checkbox" data-id="${row.id}">`;
+                }
+            },
+            {
+                data: null,
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="bi bi-person-fill text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">${row.studentName}</div>
+                                <small class="text-muted">ID: ${row.studentId}</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                data: null,
+                render: function(data, type, row) {
+                    const iconColor = getDocumentTypeColor(row.documentType);
+                    return `<i class="bi bi-file-earmark-text ${iconColor} me-1"></i>${row.documentType}`;
+                }
+            },
+            { 
+                data: 'course',
+                defaultContent: '-'
+            },
+            { 
+                data: 'school',
+                defaultContent: '-',
+                render: function(data) {
+                    return data ? data.toUpperCase() : '-';
+                }
+            },
+            { data: 'submissionDate' },
+            { data: 'fileSize' },
+            {
+                data: 'status',
+                render: function(data) {
+                    return getStatusBadge(data);
+                }
+            },
+            {
+                data: null,
+                orderable: false,
+                render: function(data, type, row) {
+                    return getActionButtons(row);
+                }
+            }
+        ],
+        order: [[5, 'desc']], // Sort by submission date
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        responsive: true,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search documents...",
+            lengthMenu: "_MENU_ entries per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "No documents available",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            zeroRecords: "No matching documents found",
+            emptyTable: "No documents available in table"
+        },
+        drawCallback: function() {
+            // Re-bind select all checkbox
+            $('#selectAll').off('change').on('change', function() {
+                $('.row-checkbox').prop('checked', this.checked);
+            });
+        }
     });
+    
+    console.log('DataTable initialized');
 });
 
+// Update statistics cards
+function updateStatistics(stats) {
+    $('.col-md-3:nth-child(1) h3').text(stats.pending);
+    $('.col-md-3:nth-child(2) h3').text(stats.approved);
+    $('.col-md-3:nth-child(3) h3').text(stats.rejected);
+    $('.col-md-3:nth-child(4) h3').text(stats.total);
+    
+    // Update pending badge in header
+    $('.btn-warning .badge').text(stats.pending);
+}
+
+// Get status badge HTML
+function getStatusBadge(status) {
+    const badges = {
+        'pending': '<span class="badge bg-warning">Pending</span>',
+        'approved': '<span class="badge bg-success">Approved</span>',
+        'rejected': '<span class="badge bg-danger">Rejected</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+// Get document type icon color
+function getDocumentTypeColor(type) {
+    const colors = {
+        'PSA Birth Certificate': 'text-primary',
+        'Transcript of Records': 'text-success',
+        'Diploma': 'text-warning',
+        'Marriage Certificate': 'text-info'
+    };
+    return colors[type] || 'text-secondary';
+}
+
+// Get action buttons based on status
+function getActionButtons(doc) {
+    const baseButtons = `
+        <button class="btn btn-sm btn-outline-primary" title="View" onclick="viewDocument('${doc.documentPath}', '${doc.documentType}')">
+            <i class="bi bi-eye"></i>
+        </button>
+    `;
+    
+    if (doc.status === 'pending') {
+        return `
+            <div class="btn-group btn-group-sm">
+                ${baseButtons}
+                <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveDocument(${doc.id}, '${doc.documentType}')">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="rejectDocument(${doc.id}, '${doc.documentType}')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        `;
+    } else if (doc.status === 'approved') {
+        return `
+            <div class="btn-group btn-group-sm">
+                ${baseButtons}
+                <button class="btn btn-sm btn-outline-secondary" title="Download" onclick="downloadDocument('${doc.documentPath}')">
+                    <i class="bi bi-download"></i>
+                </button>
+            </div>
+        `;
+    } else if (doc.status === 'rejected') {
+        return `
+            <div class="btn-group btn-group-sm">
+                ${baseButtons}
+                <button class="btn btn-sm btn-outline-info" title="View Reason" onclick="viewReason(${doc.id}, '${doc.remarks || 'No reason provided'}')">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+            </div>
+        `;
+    }
+}
+
 // School filter - dynamically populate course dropdown
-document.getElementById('schoolFilter').addEventListener('change', function() {
+$('#schoolFilter').on('change', function() {
     const school = this.value;
-    const courseDropdown = document.getElementById('documentTypeFilter');
+    const courseDropdown = $('#documentTypeFilter');
     
     // Clear existing options
-    courseDropdown.innerHTML = '<option value="" selected>Course</option>';
+    courseDropdown.html('<option value="">All Courses</option>');
     
     if (school && courseOptions[school]) {
         // Enable dropdown and populate with courses
-        courseDropdown.disabled = false;
+        courseDropdown.prop('disabled', false);
         courseOptions[school].forEach(course => {
-            const option = document.createElement('option');
-            option.value = course.value;
-            option.textContent = course.text;
-            courseDropdown.appendChild(option);
+            courseDropdown.append(`<option value="${course.value}">${course.text}</option>`);
         });
     } else {
         // Disable dropdown if no school selected
-        courseDropdown.disabled = true;
+        courseDropdown.prop('disabled', true);
     }
+    
+    // Apply filter
+    applyCustomFilters();
 });
 
-// Document type (Course) filter
-document.getElementById('documentTypeFilter').addEventListener('change', function() {
-    const docType = this.value.toLowerCase();
-    const tableRows = document.querySelectorAll('#tableBody tr');
+// Course filter
+$('#documentTypeFilter').on('change', applyCustomFilters);
+
+// Batch filter
+$('#batchFilter').on('change', applyCustomFilters);
+
+// Apply custom filters
+function applyCustomFilters() {
+    const school = $('#schoolFilter').val();
+    const course = $('#documentTypeFilter').val();
+    const batch = $('#batchFilter').val();
     
-    tableRows.forEach(row => {
-        if (docType === '') {
-            row.style.display = '';
-        } else {
-            const text = row.children[2].textContent.toLowerCase();
-            row.style.display = text.includes(docType) ? '' : 'none';
+    $.fn.dataTable.ext.search.push(
+        function(settings, data, dataIndex) {
+            const rowData = documentsTable.row(dataIndex).data();
+            
+            let matchSchool = !school || (rowData.school && rowData.school.toLowerCase() === school.toLowerCase());
+            let matchCourse = !course || (rowData.course && rowData.course.toLowerCase().includes(course.toLowerCase()));
+            let matchBatch = !batch || (rowData.batch && rowData.batch.toLowerCase() === batch.toLowerCase());
+            
+            return matchSchool && matchCourse && matchBatch;
         }
-    });
+    );
+    
+    documentsTable.draw();
+    $.fn.dataTable.ext.search.pop();
+}
+
+// Use DataTables search instead
+$('#searchInput').on('keyup', function() {
+    documentsTable.search(this.value).draw();
 });
 
 // Reset filters
-document.getElementById('resetFilters').addEventListener('click', function() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('schoolFilter').value = '';
-    document.getElementById('documentTypeFilter').innerHTML = '<option value="" selected>Course</option>';
-    document.getElementById('documentTypeFilter').disabled = true;
-    document.getElementById('batchFilter').value = '';
+$('#resetFilters').on('click', function() {
+    $('#searchInput').val('');
+    $('#schoolFilter').val('');
+    $('#documentTypeFilter').html('<option value="">Course</option>').prop('disabled', true);
+    $('#batchFilter').val('');
     
-    const tableRows = document.querySelectorAll('#tableBody tr');
-    tableRows.forEach(row => row.style.display = '');
+    documentsTable.search('').draw();
+    applyCustomFilters();
 });
 
-// Select all checkbox
-document.getElementById('selectAll').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.row-checkbox');
-    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-});
-
-// Document action functions
-function viewDocument(id) {
+// View document
+function viewDocument(path, type) {
     const modal = new bootstrap.Modal(document.getElementById('viewDocumentModal'));
+    const modalBody = $('#viewDocumentModal .modal-body');
+    const modalTitle = $('#viewDocumentModal .modal-title');
+    
+    modalTitle.text(`View ${type}`);
+    
+    const fileExtension = path.split('.').pop().toLowerCase();
+    const filePath = `/uploads/documents/${path}`;
+    
+    if (fileExtension === 'pdf') {
+        modalBody.html(`
+            <iframe src="${filePath}" style="width: 100%; height: 500px; border: none;"></iframe>
+        `);
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+        modalBody.html(`
+            <img src="${filePath}" class="img-fluid" alt="${type}">
+        `);
+    } else {
+        modalBody.html(`
+            <div class="text-center p-5">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 4rem;"></i>
+                <p class="mt-3">File type not supported for preview</p>
+                <a href="${filePath}" download class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>Download File
+                </a>
+            </div>
+        `);
+    }
+    
     modal.show();
 }
 
-function approveDocument(id) {
-    if (confirm('Are you sure you want to approve this document?')) {
-        alert('Document #' + id + ' has been approved successfully!');
-        // Add your approval logic here
+// Approve document
+function approveDocument(id, type) {
+    if (confirm(`Are you sure you want to approve this ${type}?`)) {
+        fetch('approve-document.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, type })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Document approved successfully!');
+                documentsTable.ajax.reload(); // Reload table
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+        });
     }
 }
 
+// Reject document
 let currentRejectId = null;
+let currentRejectType = null;
 
-function rejectDocument(id) {
+function rejectDocument(id, type) {
     currentRejectId = id;
+    currentRejectType = type;
+    $('#rejectDocumentModal .modal-title').text(`Reject ${type}`);
     const modal = new bootstrap.Modal(document.getElementById('rejectDocumentModal'));
     modal.show();
 }
 
 function confirmReject() {
-    const reason = document.getElementById('rejectionReason').value;
+    const reason = $('#rejectionReason').val();
     if (reason.trim() === '') {
         alert('Please provide a reason for rejection');
         return;
     }
-    alert('Document #' + currentRejectId + ' has been rejected.\nReason: ' + reason);
-    bootstrap.Modal.getInstance(document.getElementById('rejectDocumentModal')).hide();
-    document.getElementById('rejectionReason').value = '';
-    // Add your rejection logic here
+    
+    fetch('reject-document.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentRejectId, type: currentRejectType, reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Document rejected successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('rejectDocumentModal')).hide();
+            $('#rejectionReason').val('');
+            documentsTable.ajax.reload(); // Reload table
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error occurred');
+    });
 }
 
-function downloadDocument(id) {
-    alert('Downloading document #' + id);
-    // Add your download logic here
+// Download document
+function downloadDocument(path) {
+    const link = document.createElement('a');
+    link.href = `/uploads/documents/${path}`;
+    link.download = path;
+    link.click();
 }
 
-function viewReason(id) {
-    alert('Document was rejected due to: Incomplete information or poor image quality');
-    // Add your view reason logic here
+// View rejection reason
+function viewReason(id, remarks) {
+    alert(`Rejection Reason:\n\n${remarks}`);
 }
 </script>
 
-
-
-
-
-
-
-
-
-
-
-
-
-<?php
-    // Include footer
-    include('../footer/footer.php');
-    ?>
+<?php include '../footer/footer.php'; ?>

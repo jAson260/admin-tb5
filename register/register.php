@@ -188,59 +188,27 @@ include '../includes/header.php';
             </div>
 
             <!-- SECTION 6: PASSWORD -->
-<!-- SECTION 6: PASSWORD -->
 <h6 class="fw-bold text-royal mb-3"><i class="fas fa-key me-2"></i>Account Security</h6>
 <div class="form-floating mb-4 position-relative">
-    <!-- added 'z-index: 1' to ensure it's not buried -->
-    <input type="password" name="password" class="form-control pe-5" id="pass" placeholder="Password" required style="z-index: 1;">
-    <label for="pass">Create Password</label>
+    <input type="password" name="password" class="form-control" id="pass" placeholder="Password" required>
+    <label for="pass">Password</label>
     
-    <!-- EYE ICON TOGGLE -->
-    <!-- z-index: 10 makes sure the button stays clickable on top of the floating label -->
-    <span class="position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer; z-index: 10;">
-        <i class="fas fa-eye text-muted" id="eyeIcon"></i>
-    </span>
+    <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0" id="togglePassword" style="z-index: 10; background: transparent;">
+        <i class="fas fa-eye text-muted" id="eyeIcon" style="font-size: 1.2rem;"></i>
+    </button>
 </div>
 
-<!-- Place this script just before your footer include or inside your scripts block -->
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const toggleBtn = document.querySelector('#togglePassword');
-        const passwordInput = document.querySelector('#pass');
-        const icon = document.querySelector('#eyeIcon');
+<!-- Action Button -->
+<button type="button" id="btnRegister" class="btn btn-royal w-100 py-3 border-0 shadow-sm fw-bold rounded-pill">
+    REGISTER ACCOUNT
+</button>
 
-        if(toggleBtn) {
-            toggleBtn.addEventListener('click', function (e) {
-                // Stop the form from doing anything else
-                e.preventDefault();
-                
-                // Toggle the 'type' attribute
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                
-                // Toggle the eye / eye-slash icon
-                icon.classList.toggle('fa-eye');
-                icon.classList.toggle('fa-eye-slash');
-                
-                // Optional: Toggle color to blue when showing
-                icon.classList.toggle('text-royal');
-                icon.classList.toggle('text-muted');
-            });
-        }
-    });
-</script>
-
-            <!-- Action Button - Manually controlled via ID -->
-            <button type="button" id="btnRegister" class="btn btn-royal w-100 py-3 border-0 shadow-sm fw-bold rounded-pill">
-                REGISTER ACCOUNT
-            </button>
-
-            <div class="mt-4 text-center">
-                <a href="../index.php" class="text-royal fw-bold text-decoration-none small">
-                    <i class="fas fa-arrow-left me-1"></i> Back to Login
-                </a>
-            </div>
-        </form>
+<div class="mt-4 text-center">
+    <a href="/login/login" class="text-royal fw-bold text-decoration-none small">
+        <i class="fas fa-arrow-left me-1"></i> Back to Login
+    </a>
+</div>
+</form>
     </div>
 </div>
 
@@ -267,96 +235,132 @@ include '../includes/header.php';
 <!-- JavaScript Logic -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        console.log('DOM loaded, initializing registration form...');
+        
         const form = document.getElementById('registerForm');
         const regBtn = document.getElementById('btnRegister');
         const successModal = new bootstrap.Modal(document.getElementById('regSuccessModal'));
         const okBtn = document.getElementById('confirmOk');
+        
+        // Check if elements exist
+        if (!form || !regBtn) {
+            console.error('Form or button not found!');
+            return;
+        }
+        
+        console.log('Form and button found:', form, regBtn);
 
-        // Toggle Eye Icon
+        // Toggle Password Visibility
         const togglePassword = document.querySelector('#togglePassword');
         const passwordInput = document.querySelector('#pass');
-        togglePassword.addEventListener('click', function () {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
-            this.querySelector('i').classList.toggle('text-royal');
-        });
+        const eyeIcon = document.querySelector('#eyeIcon');
 
-        // 1. Intercept Register Click
-        regBtn.addEventListener('click', function() {
+if (togglePassword && passwordInput && eyeIcon) {
+    togglePassword.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Toggle password visibility
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle eye icon
+        if (type === 'text') {
+            // Password is visible
+            eyeIcon.classList.remove('fa-eye', 'text-muted');
+            eyeIcon.classList.add('fa-eye-slash', 'text-royal');
+        } else {
+            // Password is hidden
+            eyeIcon.classList.remove('fa-eye-slash', 'text-royal');
+            eyeIcon.classList.add('fa-eye', 'text-muted');
+        }
+        
+        console.log('Password visibility toggled to:', type);
+    });
+    console.log('Password toggle initialized');
+}
+        // Register Button Click Handler
+        regBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Register button clicked!');
+            
             // Check browser native validation
-            if (form.checkValidity()) {
-                // Disable button to prevent double submission
-                regBtn.disabled = true;
-                regBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>PROCESSING...';
+            if (!form.checkValidity()) {
+                console.log('Form invalid, showing validation errors');
+                form.reportValidity();
+                return;
+            }
+            
+            console.log('Form valid, proceeding with submission...');
+            
+            // Disable button to prevent double submission
+            regBtn.disabled = true;
+            regBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>PROCESSING...';
+            
+            // Prepare form data
+            const formData = new FormData(form);
+            
+            // Debug: Log form data
+            console.log('=== Form Data ===');
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ': ' + value);
+            }
+            
+            // Send AJAX request
+            fetch('register-handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response received:', response.status, response.statusText);
                 
-                // Prepare form data
-                const formData = new FormData(form);
-                
-                // Debug: Log form data
-                console.log('Sending registration data...');
-                for (let [key, value] of formData.entries()) {
-                    console.log(key + ': ' + value);
+                if (!response.ok) {
+                    throw new Error('HTTP error! status: ' + response.status);
                 }
                 
-                // Send AJAX request
-                fetch('register-handler.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    console.log('Response headers:', response.headers);
-                    
-                    // Check if response is OK
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.status);
-                    }
-                    
-                    // Try to parse as JSON
-                    return response.text().then(text => {
-                        console.log('Raw response:', text);
-                        try {
-                            return JSON.parse(text);
-                        } catch (e) {
-                            console.error('JSON parse error:', e);
-                            console.error('Response text:', text);
-                            throw new Error('Invalid JSON response from server');
-                        }
-                    });
-                })
-                .then(data => {
-                    console.log('Parsed data:', data);
+                return response.text();
+            })
+            .then(text => {
+                console.log('Raw response text:', text);
+                
+                // Try to parse as JSON
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Parsed JSON:', data);
                     
                     if (data.success) {
-                        // Show success modal
+                        console.log('Registration successful!');
+                        form.reset();
                         successModal.show();
                     } else {
-                        // Show error message
+                        console.error('Registration failed:', data.message);
                         alert('Registration Error: ' + data.message);
-                        regBtn.disabled = false;
-                        regBtn.innerHTML = 'REGISTER ACCOUNT';
                     }
-                })
-                .catch(error => {
-                    console.error('Full error:', error);
-                    alert('An error occurred during registration: ' + error.message + '\nCheck console for details.');
-                    regBtn.disabled = false;
-                    regBtn.innerHTML = 'REGISTER ACCOUNT';
-                });
-            } else {
-                // If invalid, highlight missing fields
-                form.reportValidity();
-            }
+                } catch (e) {
+                    console.error('JSON parse error:', e);
+                    console.error('Response was:', text);
+                    alert('Server returned invalid response. Check console.');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Network error: ' + error.message + '\n\nCheck:\n1. Is register-handler.php accessible?\n2. Check browser console for details');
+            })
+            .finally(() => {
+                // Re-enable button
+                regBtn.disabled = false;
+                regBtn.innerHTML = 'REGISTER ACCOUNT';
+            });
         });
 
-        // 2. Redirection Logic on OK
+        // OK Button in Success Modal
         okBtn.addEventListener('click', function() {
+            console.log('Redirecting to index...');
             window.location.href = '../index.php';
         });
+        
+        console.log('All event listeners registered successfully');
     });
 </script>
 
 
-<?php include '../includes/footer.php'; ?>

@@ -4,17 +4,17 @@ RewriteEngine On
 Options -Indexes
 
 # Set default pages for directories
-DirectoryIndex index.php login.php dashboard.php admin-dashboard.php logs.php student-records.php account-management.php print-management.php documents-approval.php tor-grades.php course-creation.php create-batch.php
+DirectoryIndex index.php login.php dashboard.php admin-dashboard.php logs.php student-records.php account-management.php print-management.php documents-approval.php tor-grades.php course-creation.php create-batch.php profile.php enrollment.php
 
 # Custom Error Pages
-ErrorDocument 404 /admin-tb5/404.php
+ErrorDocument 404   /404.php
 ErrorDocument 403 /admin-tb5/403.php
 ErrorDocument 500 /admin-tb5/500.php
 
 # Redirect /login to /login/login.php
 RewriteRule ^login/?$ login/login.php [L]
 
-# Redirect /logout to /login/logout.php (FIXED - was pointing to admin-tb5/logout/logout.php)
+# Redirect /logout to /login/logout.php
 RewriteRule ^logout/?$ login/logout.php [L]
 
 # Redirect /dashboard to /dashboard/dashboard.php (Student Dashboard)
@@ -22,6 +22,10 @@ RewriteRule ^dashboard/?$ dashboard/dashboard.php [L]
 
 # Redirect /admin to /admin-tb5/admin-dashboard/admin-dashboard.php (Admin Dashboard)
 RewriteRule ^admin/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
+
+# Enrollment Pages - Clean URL Redirects
+RewriteRule ^enrollment/?$ enrollment/enrollment.php [L]
+RewriteRule ^enrollment/step-2/?$ enrollment/enrollment_page2.php [L]
 
 # Admin Panel Pages - Clean URL Redirects
 RewriteRule ^admin-tb5/admin-dashboard/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
@@ -33,9 +37,7 @@ RewriteRule ^admin-tb5/documents-approval/?$ admin-tb5/documents-approval/docume
 RewriteRule ^admin-tb5/tor-grades/?$ admin-tb5/tor-grades/tor-grades.php [L]
 RewriteRule ^admin-tb5/course-creation/?$ admin-tb5/course-creation/course-creation.php [L]
 RewriteRule ^admin-tb5/create-batch/?$ admin-tb5/create-batch/create-batch.php [L]
-
-# Remove this incorrect line (it was pointing login to logout!)
-# RewriteRule ^admin-tb5/login/?$ admin-tb5/login/logout.php [L]
+RewriteRule ^admin-tb5/profile/?$ admin-tb5/profile/profile.php [L]
 
 # Hide .php extensions site-wide
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -46,5 +48,9 @@ RewriteRule ^([^/]+)/([^/]+)$ $1/$2.php [L]
 RewriteCond %{THE_REQUEST} ^GET.*\.php [NC]
 RewriteCond %{REQUEST_URI} !^/admin-tb5/(404|403|500|hash-password)\.php$
 RewriteCond %{REQUEST_URI} !/admin-tb5/login/(login-handler|logout|refresh-session)\.php$
-RewriteCond %{REQUEST_URI} !(admin-dashboard|logs|student-records|account-management|print-management|documents-approval|tor-grades|course-creation|create-batch)\.php
+RewriteCond %{REQUEST_URI} !/register/register-handler\.php$
+RewriteCond %{REQUEST_URI} !/enrollment/upload-documents-handler\.php$
+RewriteCond %{REQUEST_URI} !/admin-tb5/account-management/(get-accounts|get-account-details|get-statistics|change-password|delete-account)\.php$
+RewriteCond %{REQUEST_URI} !/admin-tb5/documents-approval/(get-documents|approve-document|reject-document)\.php$
+RewriteCond %{REQUEST_URI} !(admin-dashboard|logs|student-records|account-management|print-management|documents-approval|tor-grades|course-creation|create-batch|profile|enrollment)\.php
 RewriteRule ^(.*)\.php$ /$1 [R=301,L]

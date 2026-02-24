@@ -58,8 +58,8 @@ include '../includes/header.php';
         <!-- Enrollment Form Card -->
         <div class="card border-0 shadow-sm rounded-4 mb-5">
             <div class="card-body p-4 p-md-5">
-                <!-- IMPORTANT: enctype="multipart/form-data" is required for file uploads -->
-                <form action="enrollment_summary.php" method="POST" enctype="multipart/form-data">
+                <!-- IMPORTANT: Add id="uploadForm" here -->
+                <form id="uploadForm" enctype="multipart/form-data">
                     
                     <div class="row g-4">
                         
@@ -102,8 +102,6 @@ include '../includes/header.php';
                             </div>
                         </div>
 
-                    </div>
-
             <!-- Instruction Note -->
                     <div class="mt-5 p-3 rounded-3 bg-light border-start border-primary border-4">
                         <small class="text-muted d-block">
@@ -112,7 +110,7 @@ include '../includes/header.php';
                         </small>
                     </div>
 
-                    <!-- DATA PRIVACY SECTION -->
+            <!-- DATA PRIVACY SECTION -->
                     <div class="mt-4 mb-2">
                         <div class="form-check d-flex align-items-start p-3 rounded-3 border shadow-sm" style="background-color: #f0f4ff; border-left: 5px solid var(--royal-blue) !important;">
                             <input class="form-check-input me-3 ms-0" type="checkbox" id="privacyCheck" style="width: 25px; height: 18px; cursor: pointer; border-color: var(--royal-blue);">
@@ -125,7 +123,7 @@ include '../includes/header.php';
 
                     <!-- Navigation Buttons -->
                     <div class="mt-5 d-flex justify-content-between border-top pt-4">
-                        <a href="enrollment.php" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-muted">
+                        <a href="/enrollment" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-muted">
                             <i class="fas fa-chevron-left me-2"></i> Back
                         </a>
                         
@@ -152,11 +150,16 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- JavaScript for Privacy Check and Redirection -->
+<!-- JavaScript for Privacy Check, Form Submission, and Redirection -->
 <script>
     // Logic to enable/disable button based on Privacy Checkbox
     const privacyCheck = document.getElementById('privacyCheck');
     const completeBtn = document.getElementById('completeBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const successModal = new bootstrap.Modal(document.getElementById('enrollSuccessModal'));
+
+    // Initially disable the button
+    completeBtn.disabled = true;
 
     privacyCheck.addEventListener('change', function() {
         if(this.checked) {
@@ -164,6 +167,83 @@ include '../includes/header.php';
         } else {
             completeBtn.disabled = true;
         }
+    });
+
+    // Handle form submission with AJAX
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        console.log('Form submitted');
+        
+        // Check if privacy checkbox is checked
+        if (!privacyCheck.checked) {
+            alert('Please agree to the Terms & Conditions and Data Privacy Policy.');
+            return;
+        }
+        
+        // Disable button and show loading
+        completeBtn.disabled = true;
+        completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        
+        // Prepare form data
+        const formData = new FormData(uploadForm);
+        
+        // Debug: Log form data
+        console.log('=== Form Data ===');
+        for (let [key, value] of formData.entries()) {
+            if (value instanceof File) {
+                console.log(key + ': ' + value.name + ' (' + value.size + ' bytes)');
+            } else {
+                console.log(key + ': ' + value);
+            }
+        }
+        
+        // Send AJAX request
+        fetch('upload-documents-handler.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('Response received:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error('HTTP error! status: ' + response.status);
+            }
+            
+            return response.text();
+        })
+        .then(text => {
+            console.log('Raw response text:', text);
+            
+            // Try to parse as JSON
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed JSON:', data);
+                
+                if (data.success) {
+                    console.log('Upload successful!');
+                    
+                    // Show success modal
+                    successModal.show();
+                } else {
+                    console.error('Upload failed:', data.message);
+                    alert('Upload Error: ' + data.message);
+                }
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                console.error('Response was:', text);
+                alert('Server returned invalid response. Check console for details.');
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Network error: ' + error.message + '\n\nPlease check:\n1. File sizes (max 5MB each)\n2. File formats (PDF, JPG, PNG only)\n3. Browser console for details');
+        })
+        .finally(() => {
+            // Re-enable button
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = 'Complete Enrollment <i class="fas fa-check-circle ms-2"></i>';
+        });
     });
 
     // Redirect Logic

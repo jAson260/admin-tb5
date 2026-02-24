@@ -92,7 +92,7 @@ include '../includes/sidebar.php';
         <!-- Enrollment Form Card -->
         <div class="card border-0 shadow-sm rounded-4 mb-5">
             <div class="card-body p-4 p-md-5">
-                <form action="enrollment_page2.php" method="POST">
+                <form action="/enrollment/step-2" method="POST">
 
                     <hr class="mb-4 opacity-50">
 

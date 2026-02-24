@@ -37,10 +37,7 @@
         </div>
     </footer>
 
-    <!-- BOOTSTRAP & JQUERY SCRIPTS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+   
     <script>
         // Responsive Sidebar Toggle Logic
         const sidebarToggle = document.getElementById('sidebarToggle');

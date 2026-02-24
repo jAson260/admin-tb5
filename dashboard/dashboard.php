@@ -95,14 +95,13 @@ $enrollment_progress = 75; // Percent
             </div>
         </div>
 
-        <!-- SECTION 2: STATS OVERVIEW -->
-        <div class="row mb-4">
+   <div class="row mb-4">
             <!-- Course Summary Card -->
             <div class="col-lg-6 mb-3">
                 <div class="card status-widget shadow-sm h-100 p-3">
                     <div class="card-body">
                         <h6 class="text-muted fw-bold small text-uppercase">Active Qualification</h6>
-                        <h4 class="fw-bold text-dark mt-2 mb-3"><?php echo htmlspecialchars($current_course); ?></h4>
+                        <h4 class="fw-bold text-dark mt-2 mb-3"><?php echo $current_course; ?></h4>
                         <div class="d-flex align-items-center mb-1">
                             <span class="small fw-bold text-royal">Enrollment Progress</span>
                             <span class="ms-auto small fw-bold text-royal"><?php echo $enrollment_progress; ?>%</span>
@@ -127,15 +126,15 @@ $enrollment_progress = 75; // Percent
                 </div>
             </div>
 
-            <!-- Notification Quick View -->
+            <!-- UPDATED: USERS MANUAL / GUIDE BUTTON -->
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card status-widget shadow-sm h-100 p-3">
+                <div class="card status-widget clickable shadow-sm h-100 p-3 border-start border-info border-4" data-bs-toggle="modal" data-bs-target="#manualModal">
                     <div class="card-body text-center">
-                        <div class="bg-warning bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
-                            <i class="fas fa-bell text-warning"></i>
+                        <div class="bg-info bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
+                            <i class="fas fa-book-open text-info"></i>
                         </div>
-                        <h3 class="fw-bold mb-0">2</h3>
-                        <small class="text-muted">New Alerts</small>
+                        <h5 class="fw-bold mb-0 text-dark">User Guide</h5>
+                        <small class="text-muted">How to Upload?</small>
                     </div>
                 </div>
             </div>
@@ -143,58 +142,43 @@ $enrollment_progress = 75; // Percent
 
         <div class="row">
             <!-- ENROLLMENT PATHWAY -->
-            <div class="col-lg-7">
+            <div class="col-lg-7 mb-4">
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
                     <div class="card-header bg-white py-3 border-0">
-                        <h6 class="mb-0 fw-bold"><i class="fas fa-list-ol me-2 text-royal"></i>Next Action Items</h6>
+                        <h6 class="mb-0 fw-bold text-royal"><i class="fas fa-list-ol me-2"></i>Next Action Items</h6>
                     </div>
                     <div class="card-body">
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
                                 <i class="fas fa-check-circle text-success me-3"></i>
-                                <span>Basic Information Registration</span>
-                                <span class="ms-auto badge bg-success-light text-success fw-bold">Done</span>
+                                <span>Account Setup Complete</span>
+                                <span class="ms-auto badge bg-light text-success fw-bold">Done</span>
                             </li>
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
                                 <div class="step-dot step-active"></div>
-                                <span>Submit Documentary Requirements</span>
-                                <span class="ms-auto"><a href="../upload/upload.php" class="text-royal small fw-bold">View List</a></span>
+                                <span>Upload PSA, TOR, & Diploma</span>
+                                <span class="ms-auto"><a href="<?php echo $root; ?>upload/upload.php" class="text-royal small fw-bold">Submit Files</a></span>
                             </li>
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
                                 <div class="step-dot"></div>
-                                <span class="text-muted">Assessment for Approval</span>
-                            </li>
-                            <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                <div class="step-dot"></div>
-                                <span class="text-muted">Download Enrollment Certificate</span>
+                                <span class="text-muted">Pending Admin Review</span>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- RECENT SYSTEM ACTIVITY (Student's specific) -->
-            <div class="col-lg-5">
+            <!-- RECENT SYSTEM ACTIVITY -->
+            <div class="col-lg-5 mb-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white py-3 border-0">
-                        <h6 class="mb-0 fw-bold"><i class="fas fa-stream me-2 text-royal"></i>Recent Updates</h6>
+                        <h6 class="mb-0 fw-bold text-royal"><i class="fas fa-stream me-2"></i>Status Updates</h6>
                     </div>
                     <div class="card-body pt-0">
                         <div class="alert bg-light border-0 small text-dark p-2 mb-2 d-flex">
                             <i class="fas fa-clock me-2 mt-1 text-muted"></i>
-                            <div><strong>Jan 15, 2024:</strong> Your <i>PSA Certificate</i> was Approved.</div>
+                            <div><strong>Current:</strong> No document issues found.</div>
                         </div>
-                        <div class="alert bg-light border-0 small text-dark p-2 mb-2 d-flex">
-                            <i class="fas fa-clock me-2 mt-1 text-muted"></i>
-                            <div><strong>Jan 14, 2024:</strong> Requested password change (Admin verification).</div>
-                        </div>
-                        <div class="alert bg-light border-0 small text-dark p-2 mb-0 d-flex text-danger bg-danger-light">
-                            <i class="fas fa-exclamation-circle me-2 mt-1"></i>
-                            <div>Your <i>Transcript of Records</i> requires a clear re-upload.</div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white border-0 text-center pb-3">
-                        <a href="../history/history.php" class="small text-royal text-decoration-none fw-bold">View Detailed History</a>
                     </div>
                 </div>
             </div>
@@ -202,5 +186,44 @@ $enrollment_progress = 75; // Percent
 
     </div>
 </div>
+
+<!-- MANUAL MODAL (The User Guide Window) -->
+<div class="modal fade" id="manualModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 bg-info bg-opacity-10 rounded-top-4">
+                <h5 class="modal-title fw-bold text-info"><i class="fas fa-book me-2"></i>Submission Manual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4 d-flex">
+                    <div class="fw-bold text-info me-3 h4">01</div>
+                    <div>
+                        <h6 class="fw-bold">Go to Upload Module</h6>
+                        <p class="small text-muted">Select <strong>"Upload Documents"</strong> from the side navigation menu on the left.</p>
+                    </div>
+                </div>
+                <div class="mb-4 d-flex">
+                    <div class="fw-bold text-info me-3 h4">02</div>
+                    <div>
+                        <h6 class="fw-bold">Pick your File</h6>
+                        <p class="small text-muted">Find the specific requirement (e.g., PSA Certificate) and click the **Sync/Change** icon.</p>
+                    </div>
+                </div>
+                <div class="mb-0 d-flex">
+                    <div class="fw-bold text-info me-3 h4">03</div>
+                    <div>
+                        <h6 class="fw-bold">Wait for Verification</h6>
+                        <p class="small text-muted">After submission, the status will change to <strong>Pending</strong>. Admins typically review files within 24-48 hours.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-royal rounded-pill px-5 shadow-sm" onclick="window.location.href='<?php echo $root; ?>upload/upload.php'">Go to Upload <i class="fas fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <?php include '../includes/footer.php'; ?>

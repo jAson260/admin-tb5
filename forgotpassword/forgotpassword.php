@@ -37,7 +37,7 @@ include '../includes/header.php';
 
             <!-- Navigation Links -->
             <div class="mt-4 text-center">
-                <a href="../index.php" class="text-royal fw-bold text-decoration-underline small">
+                <a href="/login/login" class="text-royal fw-bold text-decoration-underline small">
                     <i class="fas fa-arrow-left me-1"></i> Back to Login
                 </a>
             </div>

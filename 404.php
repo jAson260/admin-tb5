@@ -137,23 +137,10 @@ http_response_code(404);
             <a href="javascript:history.back()" class="btn-outline-royal">
                 <i class="fas fa-arrow-left me-2"></i>Go Back
             </a>
-            <a href="<?php echo isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true ? 'dashboard/' : 'login/'; ?>" class="btn-royal">
-                <i class="fas fa-home me-2"></i>Home
-            </a>
         </div>
         
         <hr class="my-4">
         
-        <div class="text-muted small">
-            <p class="mb-2"><strong>Quick Links:</strong></p>
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
-                <a href="login/" class="text-decoration-none">Login</a>
-                <span>•</span>
-                <a href="register/" class="text-decoration-none">Register</a>
-                <span>•</span>
-                <a href="forgotpassword/" class="text-decoration-none">Forgot Password</a>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

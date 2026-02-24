@@ -1,4 +1,9 @@
 <?php
+// filepath: c:\laragon\www\admin-tb5\admin-tb5\account-management\account-management.php
+session_start();
+require_once('../../includes/rbac-guard.php');
+checkAdmin();
+
 // Include header
 include('../header/header.php');
 include('../sidebar/sidebar.php');
@@ -19,14 +24,9 @@ include('../sidebar/sidebar.php');
                         </p>
                     </div>
                     <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <div class="d-flex justify-content-md-end gap-2 flex-wrap">
-                            <button class="btn btn-light btn-sm">
-                                <i class="bi bi-download me-1"></i> Export
-                            </button>
-                            <button class="btn btn-light btn-sm" onclick="showAddAccountModal()">
-                                <i class="bi bi-plus-circle me-1"></i> Add Account
-                            </button>
-                        </div>
+                        <button class="btn btn-light btn-sm" onclick="exportAccounts()">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
                     </div>
                 </div>
             </div>
@@ -42,8 +42,11 @@ include('../sidebar/sidebar.php');
                                 <i class="bi bi-people-fill text-primary" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">Total Users</h6>
-                                <h3 class="mb-0 fw-bold">342</h3>
+                                <h6 class="text-muted mb-0 small">Total Users</h6>
+                                <h3 class="mb-0 fw-bold" id="statTotal">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                </h3>
+                                <small class="text-muted">All accounts</small>
                             </div>
                         </div>
                     </div>
@@ -53,12 +56,15 @@ include('../sidebar/sidebar.php');
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-shield-check text-success" style="font-size: 1.5rem;"></i>
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-shield-check text-danger" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">Admins</h6>
-                                <h3 class="mb-0 fw-bold">8</h3>
+                                <h6 class="text-muted mb-0 small">Admins</h6>
+                                <h3 class="mb-0 fw-bold" id="statAdmins">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                </h3>
+                                <small class="text-muted">All admin accounts</small>
                             </div>
                         </div>
                     </div>
@@ -69,11 +75,14 @@ include('../sidebar/sidebar.php');
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-check-circle text-info" style="font-size: 1.5rem;"></i>
+                                <i class="bi bi-person-check text-info" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">Active</h6>
-                                <h3 class="mb-0 fw-bold">328</h3>
+                                <h6 class="text-muted mb-0 small">Students</h6>
+                                <h3 class="mb-0 fw-bold" id="statStudents">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                </h3>
+                                <small class="text-muted">All student accounts</small>
                             </div>
                         </div>
                     </div>
@@ -83,59 +92,60 @@ include('../sidebar/sidebar.php');
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-pause-circle text-warning" style="font-size: 1.5rem;"></i>
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">Disabled</h6>
-                                <h3 class="mb-0 fw-bold">22</h3>
+                                <h6 class="text-muted mb-0 small">Active</h6>
+                                <h3 class="mb-0 fw-bold" id="statActive">
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                </h3>
+                                <small class="text-muted">Active accounts</small>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Filters and Actions Section -->
+
+        <!-- Filters Section -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <div class="row g-3 align-items-center">
-                    <!-- Search Bar -->
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" class="form-control border-start-0" id="searchInput" placeholder="Search by name, email, ID...">
-                        </div>
-                    </div>
-                    
                     <!-- Role Filter -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Account Type</label>
                         <select class="form-select" id="roleFilter">
-                            <option value="">All Roles</option>
-                            <option value="admin">Admin</option>
-                            <option value="user">User</option>
+                            <option value="">All Accounts</option>
+                            <option value="admin">Admins Only</option>
+                            <option value="student">Students Only</option>
                         </select>
                     </div>
                     
                     <!-- Status Filter -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Status</label>
                         <select class="form-select" id="statusFilter">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
-                            <option value="disabled">Disabled</option>
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="rejected">Rejected</option>
                         </select>
                     </div>
                     
                     <!-- Reset Button -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">&nbsp;</label>
                         <button class="btn btn-outline-secondary w-100" id="resetFilters">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                            <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
                         </button>
                     </div>
 
                     <!-- Add Account Button -->
-                    <div class="col-md-2">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">&nbsp;</label>
                         <button class="btn btn-primary w-100" onclick="showAddAccountModal()">
                             <i class="bi bi-plus-circle me-1"></i> Add Account
                         </button>
@@ -146,334 +156,30 @@ include('../sidebar/sidebar.php');
 
         <!-- Accounts Table -->
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold">Account List</h5>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-download me-1"></i> Export
-                    </button>
-                    <select class="form-select form-select-sm" id="entriesPerPage" style="width: auto;">
-                        <option value="10">10 per page</option>
-                        <option value="25">25 per page</option>
-                        <option value="50">50 per page</option>
-                        <option value="100">100 per page</option>
-                    </select>
-                </div>
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-table me-2"></i>Account List
+                </h5>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="accountsTable">
-                        <thead class="table-light">
+                <div class="table-responsive p-3">
+                    <table class="table table-hover align-middle" id="accountsTable" style="width:100%">
+                        <thead>
                             <tr>
-                                <th class="px-4">
-                                    <input type="checkbox" class="form-check-input" id="selectAll">
-                                </th>
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
+                                <th>Account Type</th>
+                                <th>Role/Status</th>
                                 <th>Last Login</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody">
-                            <!-- Admin Accounts -->
-                            <tr data-role="admin" data-status="active">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#A001</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-shield-fill-check text-danger"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Admin Rodriguez</div>
-                                            <small class="text-muted">Super Admin</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>admin.rodriguez@tb5.com</td>
-                                <td><span class="badge bg-danger">Admin</span></td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>Feb 13, 2026 09:30 AM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(1)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(1)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Disable Account" onclick="toggleStatus(1, 'disable')">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(1)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr data-role="admin" data-status="active">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#A002</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-shield-fill-check text-danger"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Maria Santos</div>
-                                            <small class="text-muted">Admin</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>maria.santos@tb5.com</td>
-                                <td><span class="badge bg-danger">Admin</span></td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>Feb 13, 2026 08:15 AM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(2)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(2)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Disable Account" onclick="toggleStatus(2, 'disable')">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(2)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <!-- User Accounts -->
-                            <tr data-role="user" data-status="active">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#U001</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Juan Dela Cruz</div>
-                                            <small class="text-muted">Student</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>juan.delacruz@student.com</td>
-                                <td><span class="badge bg-primary">User</span></td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>Feb 12, 2026 02:45 PM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(3)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(3)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Disable Account" onclick="toggleStatus(3, 'disable')">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(3)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr data-role="user" data-status="active">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#U002</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Ana Garcia</div>
-                                            <small class="text-muted">Student</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>ana.garcia@student.com</td>
-                                <td><span class="badge bg-primary">User</span></td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>Feb 12, 2026 11:20 AM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(4)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(4)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Disable Account" onclick="toggleStatus(4, 'disable')">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(4)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr data-role="user" data-status="disabled">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#U003</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-secondary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-secondary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Pedro Reyes</div>
-                                            <small class="text-muted">Student</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>pedro.reyes@student.com</td>
-                                <td><span class="badge bg-primary">User</span></td>
-                                <td><span class="badge bg-warning">Disabled</span></td>
-                                <td>Feb 10, 2026 03:15 PM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(5)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(5)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" title="Enable Account" onclick="toggleStatus(5, 'enable')">
-                                            <i class="bi bi-play-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(5)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr data-role="user" data-status="active">
-                                <td class="px-4">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                </td>
-                                <td><span class="text-muted">#U004</span></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold">Isabella Rodriguez</div>
-                                            <small class="text-muted">Student</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>isabella.rodriguez@student.com</td>
-                                <td><span class="badge bg-primary">User</span></td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>Feb 13, 2026 07:00 AM</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(6)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(6)">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary" title="Disable Account" onclick="toggleStatus(6, 'disable')">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(6)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                        <tbody>
+                            <!-- DataTables will populate this -->
                         </tbody>
                     </table>
                 </div>
-            </div>
-            <div class="card-footer bg-white border-top-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
-                        Showing <span id="showingStart">1</span> to <span id="showingEnd">6</span> of <span id="totalEntries">350</span> entries
-                    </div>
-                    <nav>
-                        <ul class="pagination mb-0" id="pagination">
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1">Previous</a>
-                            </li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">Next</a>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Account Modal -->
-<div class="modal fade" id="addAccountModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Account</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addAccountForm">
-                    <div class="mb-3">
-                        <label for="fullName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="fullName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role</label>
-                        <select class="form-select" id="role" required>
-                            <option value="">Select Role</option>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="confirmPassword" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirmPassword" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAddAccount()">Add Account</button>
             </div>
         </div>
     </div>
@@ -483,45 +189,14 @@ include('../sidebar/sidebar.php');
 <div class="modal fade" id="viewAccountModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Account Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-person-circle me-2"></i>Account Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Account ID</label>
-                        <p class="fw-semibold">#U001</p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Full Name</label>
-                        <p class="fw-semibold">Juan Dela Cruz</p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Email</label>
-                        <p class="fw-semibold">juan.delacruz@student.com</p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Role</label>
-                        <p><span class="badge bg-primary">User</span></p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Status</label>
-                        <p><span class="badge bg-success">Active</span></p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Last Login</label>
-                        <p class="fw-semibold">Feb 12, 2026 02:45 PM</p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Account Created</label>
-                        <p class="fw-semibold">Jan 15, 2026</p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Last Updated</label>
-                        <p class="fw-semibold">Feb 10, 2026</p>
-                    </div>
-                </div>
+            <div class="modal-body" id="accountDetailsBody">
+                <!-- Account details will be loaded here -->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -534,9 +209,11 @@ include('../sidebar/sidebar.php');
 <div class="modal fade" id="changePasswordModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Change Password</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-key me-2"></i>Change Password
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
@@ -544,6 +221,8 @@ include('../sidebar/sidebar.php');
                     Changing password for: <strong id="changePasswordUser"></strong>
                 </div>
                 <form id="changePasswordForm">
+                    <input type="hidden" id="changePasswordId">
+                    <input type="hidden" id="changePasswordType">
                     <div class="mb-3">
                         <label for="newPassword" class="form-label">New Password</label>
                         <input type="password" class="form-control" id="newPassword" required>
@@ -557,124 +236,286 @@ include('../sidebar/sidebar.php');
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitChangePassword()">Change Password</button>
+                <button type="button" class="btn btn-primary" onclick="submitChangePassword()">
+                    <i class="bi bi-check-circle me-1"></i>Change Password
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
+<!-- jQuery (required for DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
 <script>
-// Search functionality
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const tableRows = document.querySelectorAll('#tableBody tr');
-    
-    tableRows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-    updatePaginationInfo();
-});
+let accountsTable;
 
-// Role filter
-document.getElementById('roleFilter').addEventListener('change', function() {
-    filterTable();
-});
-
-// Status filter
-document.getElementById('statusFilter').addEventListener('change', function() {
-    filterTable();
-});
-
-// Filter table based on role and status
-function filterTable() {
-    const role = document.getElementById('roleFilter').value.toLowerCase();
-    const status = document.getElementById('statusFilter').value.toLowerCase();
-    const tableRows = document.querySelectorAll('#tableBody tr');
-    
-    tableRows.forEach(row => {
-        const rowRole = row.getAttribute('data-role');
-        const rowStatus = row.getAttribute('data-status');
-        
-        const roleMatch = !role || rowRole === role;
-        const statusMatch = !status || rowStatus === status;
-        
-        row.style.display = (roleMatch && statusMatch) ? '' : 'none';
-    });
-    updatePaginationInfo();
-}
-
-// Reset filters
-document.getElementById('resetFilters').addEventListener('click', function() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('roleFilter').value = '';
-    document.getElementById('statusFilter').value = '';
-    
-    const tableRows = document.querySelectorAll('#tableBody tr');
-    tableRows.forEach(row => row.style.display = '');
-    updatePaginationInfo();
-});
-
-// Select all checkbox
-document.getElementById('selectAll').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.row-checkbox');
-    checkboxes.forEach(checkbox => {
-        if (checkbox.closest('tr').style.display !== 'none') {
-            checkbox.checked = this.checked;
+$(document).ready(function() {
+    // Initialize DataTable
+    accountsTable = $('#accountsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: 'get-accounts.php',
+            type: 'POST',
+            data: function(d) {
+                d.roleFilter = $('#roleFilter').val();
+                d.statusFilter = $('#statusFilter').val();
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable Error:', error, thrown, xhr.responseText);
+                alert('Error loading data. Please check console for details.');
+            }
+        },
+        columns: [
+            { 
+                data: 'Id',
+                render: function(data, type, row) {
+                    const prefix = row.AccountType === 'admin' ? 'A' : 'S';
+                    return `<span class="text-muted fw-semibold">#${prefix}${data}</span>`;
+                }
+            },
+            { 
+                data: 'FullName',
+                render: function(data, type, row) {
+                    const isAdmin = row.AccountType === 'admin';
+                    const iconClass = isAdmin ? 'bi-shield-fill-check' : 'bi-person-fill';
+                    const iconColor = isAdmin ? 'danger' : 'primary';
+                    const subtitle = isAdmin ? row.Role : 'Student';
+                    
+                    return `
+                        <div class="d-flex align-items-center">
+                            <div class="bg-${iconColor} bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="bi ${iconClass} text-${iconColor}"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">${escapeHtml(data)}</div>
+                                <small class="text-muted">${escapeHtml(subtitle)}</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            { 
+                data: 'Email',
+                render: function(data) {
+                    return escapeHtml(data);
+                }
+            },
+            { 
+                data: 'AccountType',
+                render: function(data) {
+                    const isAdmin = data === 'admin';
+                    const badgeClass = isAdmin ? 'bg-danger' : 'bg-info';
+                    const label = isAdmin ? 'Admin' : 'Student';
+                    return `<span class="badge ${badgeClass}">${label}</span>`;
+                }
+            },
+            { 
+                data: 'Status',
+                render: function(data) {
+                    return getStatusBadge(data);
+                }
+            },
+            { 
+                data: 'LastLogin',
+                render: function(data) {
+                    return data ? formatDateTime(data) : '<span class="text-muted">Never</span>';
+                }
+            },
+            { 
+                data: null,
+                orderable: false,
+                render: function(data, type, row) {
+                    return `
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-info" title="View Details" 
+                                onclick="viewAccount(${row.Id}, '${row.AccountType}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-warning" title="Change Password" 
+                                onclick="changePassword(${row.Id}, '${row.AccountType}', '${escapeHtml(row.FullName)}')">
+                                <i class="bi bi-key"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" title="Delete Account" 
+                                onclick="deleteAccount(${row.Id}, '${row.AccountType}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        order: [[0, 'desc']],
+        responsive: true,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search accounts...",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ accounts",
+            infoEmpty: "No accounts found",
+            infoFiltered: "(filtered from _MAX_ total accounts)",
+            zeroRecords: "No matching accounts found",
+            emptyTable: "No accounts available",
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
+        },
+        drawCallback: function(settings) {
+            // Update statistics after data load
+            updateStatistics();
         }
     });
+
+    // Filter change events
+    $('#roleFilter, #statusFilter').on('change', function() {
+        accountsTable.ajax.reload();
+    });
+
+    // Reset filters
+    $('#resetFilters').on('click', function() {
+        $('#roleFilter').val('');
+        $('#statusFilter').val('');
+        accountsTable.search('').columns().search('').draw();
+    });
+    
+    // Initial statistics load
+    updateStatistics();
 });
 
-// Show Add Account Modal
-function showAddAccountModal() {
-    const modal = new bootstrap.Modal(document.getElementById('addAccountModal'));
-    modal.show();
+// Update statistics
+function updateStatistics() {
+    $.ajax({
+        url: 'get-statistics.php',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                $('#statTotal').text(data.statistics.total);
+                $('#statAdmins').text(data.statistics.admins);
+                $('#statStudents').text(data.statistics.students);
+                $('#statActive').text(data.statistics.active);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Statistics Error:', error);
+        }
+    });
 }
 
-// Submit Add Account
-function submitAddAccount() {
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
+// View account details
+function viewAccount(id, type) {
+    console.log('ViewAccount called - ID:', id, 'Type:', type);
     
-    if (password !== confirmPassword) {
-        alert('Passwords do not match!');
-        return;
-    }
-    
-    if (password.length < 8) {
-        alert('Password must be at least 8 characters long!');
-        return;
-    }
-    
-    // Add your account creation logic here
-    alert('Account created successfully!');
-    bootstrap.Modal.getInstance(document.getElementById('addAccountModal')).hide();
-    document.getElementById('addAccountForm').reset();
+    $.ajax({
+        url: 'get-account-details.php',
+        method: 'GET',
+        data: { id: id, type: type },
+        dataType: 'json',
+        success: function(data) {
+            console.log('Server response:', data);
+            
+            if (data.success) {
+                const account = data.account;
+                const isAdmin = type === 'admin';
+                
+                $('#accountDetailsBody').html(`
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Account ID</label>
+                            <p class="fw-semibold">#${type.charAt(0).toUpperCase()}${account.Id}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Account Type</label>
+                            <p><span class="badge ${isAdmin ? 'bg-danger' : 'bg-info'}">${isAdmin ? 'Admin' : 'Student'}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Full Name</label>
+                            <p class="fw-semibold">${escapeHtml(account.FullName)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Email</label>
+                            <p class="fw-semibold">${escapeHtml(account.Email)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">${isAdmin ? 'Role' : 'Status'}</label>
+                            <p class="fw-semibold">${isAdmin ? account.Role : account.Status}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Last Login</label>
+                            <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Account Created</label>
+                            <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
+                        </div>
+                        ${!isAdmin && account.ULI ? `
+                        <div class="col-md-6">
+                            <label class="text-muted small">ULI Number</label>
+                            <p class="fw-semibold">${account.ULI}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                `);
+                
+                // Use Bootstrap 5 modal method
+                const modal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
+                modal.show();
+            } else {
+                console.error('Server error:', data.message);
+                alert('Failed to load account details: ' + data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                error: error
+            });
+            alert('Failed to load account details. Error: ' + xhr.status + ' - Check browser console.');
+        }
+    });
 }
 
-// View Account Details
-function viewAccount(id) {
-    const modal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
-    modal.show();
-    // Load account details based on ID
-}
-
-// Change Password
-let currentPasswordChangeId = null;
-
-function changePassword(id) {
-    currentPasswordChangeId = id;
-    document.getElementById('changePasswordUser').textContent = 'User #' + id;
+// Change password
+function changePassword(id, type, fullName) {
+    $('#changePasswordId').val(id);
+    $('#changePasswordType').val(type);
+    $('#changePasswordUser').text(fullName);
+    $('#changePasswordForm')[0].reset();
+    
     const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
     modal.show();
 }
 
-// Submit Change Password
+// Submit change password
 function submitChangePassword() {
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+    const id = $('#changePasswordId').val();
+    const type = $('#changePasswordType').val();
+    const newPassword = $('#newPassword').val();
+    const confirmPassword = $('#confirmNewPassword').val();
     
-    if (newPassword !== confirmNewPassword) {
+    if (newPassword !== confirmPassword) {
         alert('Passwords do not match!');
         return;
     }
@@ -684,38 +525,89 @@ function submitChangePassword() {
         return;
     }
     
-    // Add your password change logic here
-    alert('Password changed successfully for account #' + currentPasswordChangeId);
-    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-    document.getElementById('changePasswordForm').reset();
-}
-
-// Toggle Account Status (Enable/Disable)
-function toggleStatus(id, action) {
-    const actionText = action === 'enable' ? 'enable' : 'disable';
-    if (confirm(`Are you sure you want to ${actionText} this account?`)) {
-        alert(`Account #${id} has been ${actionText}d successfully!`);
-        // Add your status toggle logic here
-        // Reload or update the table row
-        location.reload();
-    }
-}
-
-// Delete Account
-function deleteAccount(id) {
-    if (confirm('Are you sure you want to delete this account? This action cannot be undone!')) {
-        if (confirm('Final confirmation: Delete this account permanently?')) {
-            alert('Account #' + id + ' has been deleted successfully!');
-            // Add your delete logic here
-            location.reload();
+    $.ajax({
+        url: 'change-password.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ id: id, type: type, password: newPassword }),
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                alert('Password changed successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                modal.hide();
+                $('#changePasswordForm')[0].reset();
+            } else {
+                alert('Failed to change password: ' + data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', xhr.responseText, error);
+            alert('Failed to change password. Check console for details.');
         }
+    });
+}
+
+// Delete account
+function deleteAccount(id, type) {
+    if (confirm('Are you sure you want to delete this account? This action cannot be undone!')) {
+        $.ajax({
+            url: 'delete-account.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id, type: type }),
+            dataType: 'json',
+            success: function(data) {
+                if (data.success) {
+                    alert('Account deleted successfully!');
+                    accountsTable.ajax.reload();
+                    updateStatistics();
+                } else {
+                    alert('Failed to delete account: ' + data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', xhr.responseText, error);
+                alert('Failed to delete account. Check console for details.');
+            }
+        });
     }
 }
 
-// Update pagination info
-function updatePaginationInfo() {
-    const visibleRows = document.querySelectorAll('#tableBody tr:not([style*="display: none"])').length;
-    document.getElementById('showingEnd').textContent = visibleRows;
+// Export accounts
+function exportAccounts() {
+    accountsTable.button('.buttons-excel').trigger();
+}
+
+// Helper functions
+function getStatusBadge(status) {
+    const badges = {
+        'Active': '<span class="badge bg-success">Active</span>',
+        'Approved': '<span class="badge bg-success">Approved</span>',
+        'Pending': '<span class="badge bg-warning">Pending</span>',
+        'Suspended': '<span class="badge bg-danger">Suspended</span>',
+        'Rejected': '<span class="badge bg-danger">Rejected</span>',
+        'Inactive': '<span class="badge bg-secondary">Inactive</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 </script>
 

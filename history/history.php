@@ -1,4 +1,11 @@
 <?php 
+// Start session and include RBAC guard
+session_start();
+require_once('../includes/rbac-guard.php');
+
+// Protect this page - Only Students can access
+checkStudent();
+
 include '../includes/header.php'; 
 include '../includes/sidebar.php'; 
 
