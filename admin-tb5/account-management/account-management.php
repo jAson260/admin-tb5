@@ -169,8 +169,8 @@ include('../sidebar/sidebar.php');
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
-                                <th>Account Type</th>
-                                <th>Role/Status</th>
+                                <th>Role</th>
+                                <th>Status</th>
                                 <th>Last Login</th>
                                 <th>Actions</th>
                             </tr>
@@ -180,6 +180,79 @@ include('../sidebar/sidebar.php');
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Account Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title text-success fw-bold">
+                    <i class="bi bi-check-circle-fill me-2"></i>Approve Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="bi bi-person-check-fill text-success" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Approve Account?</h5>
+                <p class="text-muted mb-3">
+                    You are about to approve the account for<br>
+                    <strong id="approveAccountName" class="text-dark"></strong>
+                </p>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This will grant them access to the system.
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success px-4" id="confirmApproveBtn">
+                    <i class="bi bi-check-circle me-1"></i>Approve Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Account Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-danger bg-opacity-10">
+                <h5 class="modal-title text-danger fw-bold">
+                    <i class="bi bi-x-circle-fill me-2"></i>Reject Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-person-x-fill text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="fw-bold text-center mb-2">Reject Account?</h5>
+                <p class="text-muted text-center mb-3">
+                    You are about to reject the account for<br>
+                    <strong id="rejectAccountName" class="text-dark"></strong>
+                </p>
+                <div class="mb-3">
+                    <label for="rejectionReason" class="form-label fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i>Rejection Reason <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="rejectionReason" rows="4" 
+                              placeholder="Please provide a reason for rejection (e.g., Incomplete documents, Invalid credentials, etc.)" 
+                              required></textarea>
+                    <div class="form-text">This message will be sent to the user.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger px-4" id="confirmRejectBtn">
+                    <i class="bi bi-x-circle me-1"></i>Reject Account
+                </button>
             </div>
         </div>
     </div>
@@ -244,29 +317,12 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-
-<!-- jQuery (required for DataTables) -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-
 <script>
 let accountsTable;
+let currentApproveId = null;
+let currentApproveFullName = null;
+let currentRejectId = null;
+let currentRejectFullName = null;
 
 $(document).ready(function() {
     // Initialize DataTable
@@ -345,22 +401,50 @@ $(document).ready(function() {
                 data: null,
                 orderable: false,
                 render: function(data, type, row) {
-                    return `
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-info" title="View Details" 
-                                onclick="viewAccount(${row.Id}, '${row.AccountType}')">
-                                <i class="bi bi-eye"></i>
+                    const status = row.Status;
+                    const isStudent = row.AccountType === 'student';
+                    const isPending = status === 'Pending';
+                    const isRejected = status === 'Rejected';
+                    
+                    let buttons = '<div class="btn-group btn-group-sm" role="group">';
+                    
+                    // Show Approve button for Pending or Rejected student accounts
+                    if (isStudent && (isPending || isRejected)) {
+                        buttons += `
+                            <button class="btn btn-outline-success" title="Approve Account" 
+                                onclick="showApproveModal(${row.Id}, '${escapeHtml(row.FullName)}')">
+                                <i class="bi bi-check-circle"></i>
                             </button>
-                            <button class="btn btn-outline-warning" title="Change Password" 
-                                onclick="changePassword(${row.Id}, '${row.AccountType}', '${escapeHtml(row.FullName)}')">
-                                <i class="bi bi-key"></i>
+                        `;
+                    }
+                    
+                    // Show Reject button for Pending student accounts
+                    if (isStudent && isPending) {
+                        buttons += `
+                            <button class="btn btn-outline-danger" title="Reject Account" 
+                                onclick="showRejectModal(${row.Id}, '${escapeHtml(row.FullName)}')">
+                                <i class="bi bi-x-circle"></i>
                             </button>
-                            <button class="btn btn-outline-danger" title="Delete Account" 
-                                onclick="deleteAccount(${row.Id}, '${row.AccountType}')">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    `;
+                        `;
+                    }
+                    
+                    // View Details button (always visible)
+                    buttons += `
+                        <button class="btn btn-outline-info" title="View Details" 
+                            onclick="viewAccount(${row.Id}, '${row.AccountType}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-warning" title="Change Password" 
+                            onclick="changePassword(${row.Id}, '${row.AccountType}', '${escapeHtml(row.FullName)}')">
+                            <i class="bi bi-key"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" title="Delete Account" 
+                            onclick="deleteAccount(${row.Id}, '${row.AccountType}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>`;
+                    
+                    return buttons;
                 }
             }
         ],
@@ -381,7 +465,6 @@ $(document).ready(function() {
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
         },
         drawCallback: function(settings) {
-            // Update statistics after data load
             updateStatistics();
         }
     });
@@ -396,6 +479,30 @@ $(document).ready(function() {
         $('#roleFilter').val('');
         $('#statusFilter').val('');
         accountsTable.search('').columns().search('').draw();
+    });
+    
+    // Approve button click handler
+    $('#confirmApproveBtn').on('click', function() {
+        if (currentApproveId) {
+            approveAccount(currentApproveId, currentApproveFullName);
+        }
+    });
+    
+    // Reject button click handler
+    $('#confirmRejectBtn').on('click', function() {
+        const reason = $('#rejectionReason').val().trim();
+        if (!reason) {
+            alert('Please provide a rejection reason!');
+            return;
+        }
+        if (currentRejectId) {
+            rejectAccount(currentRejectId, currentRejectFullName, reason);
+        }
+    });
+    
+    // Clear rejection reason when modal closes
+    $('#rejectModal').on('hidden.bs.modal', function() {
+        $('#rejectionReason').val('');
     });
     
     // Initial statistics load
@@ -418,6 +525,79 @@ function updateStatistics() {
         },
         error: function(xhr, status, error) {
             console.error('Statistics Error:', error);
+        }
+    });
+}
+
+// Show approve modal
+function showApproveModal(id, fullName) {
+    currentApproveId = id;
+    currentApproveFullName = fullName;
+    $('#approveAccountName').text(fullName);
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    modal.show();
+}
+
+// Show reject modal
+function showRejectModal(id, fullName) {
+    currentRejectId = id;
+    currentRejectFullName = fullName;
+    $('#rejectAccountName').text(fullName);
+    $('#rejectionReason').val('');
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+// Approve account
+function approveAccount(id, fullName) {
+    $.ajax({
+        url: 'approve-account.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ id: id }),
+        dataType: 'json',
+        success: function(data) {
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
+            modal.hide();
+            
+            if (data.success) {
+                accountsTable.ajax.reload();
+                updateStatistics();
+            } else {
+                alert('Failed to approve account: ' + data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', xhr.responseText, error);
+            alert('Failed to approve account. Check console for details.');
+        }
+    });
+}
+
+// Reject account
+function rejectAccount(id, fullName, reason) {
+    $.ajax({
+        url: 'reject-account.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ id: id, reason: reason }),
+        dataType: 'json',
+        success: function(data) {
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
+            modal.hide();
+            
+            if (data.success) {
+                accountsTable.ajax.reload();
+                updateStatistics();
+            } else {
+                alert('Failed to reject account: ' + data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', xhr.responseText, error);
+            alert('Failed to reject account. Check console for details.');
         }
     });
 }
@@ -477,7 +657,6 @@ function viewAccount(id, type) {
                     </div>
                 `);
                 
-                // Use Bootstrap 5 modal method
                 const modal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
                 modal.show();
             } else {
@@ -576,7 +755,7 @@ function deleteAccount(id, type) {
 
 // Export accounts
 function exportAccounts() {
-    accountsTable.button('.buttons-excel').trigger();
+    window.location.href = 'export-accounts.php';
 }
 
 // Helper functions
@@ -614,4 +793,3 @@ function escapeHtml(text) {
 <?php
     // Include footer
     include('../footer/footer.php');
-?>

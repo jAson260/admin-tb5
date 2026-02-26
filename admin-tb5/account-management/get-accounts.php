@@ -4,12 +4,13 @@ session_start();
 require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
 
-checkAdmin();
-
 header('Content-Type: application/json');
 
+// Check admin access
+checkAdmin();
+
 try {
-    // DataTables parameters
+    // Get DataTable parameters
     $draw = isset($_POST['draw']) ? intval($_POST['draw']) : 1;
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
     $length = isset($_POST['length']) ? intval($_POST['length']) : 10;
@@ -17,13 +18,13 @@ try {
     $orderColumnIndex = isset($_POST['order'][0]['column']) ? intval($_POST['order'][0]['column']) : 0;
     $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'DESC';
     
-    // Custom filters
+    // Get filter values
     $roleFilter = isset($_POST['roleFilter']) ? $_POST['roleFilter'] : '';
     $statusFilter = isset($_POST['statusFilter']) ? $_POST['statusFilter'] : '';
     
-    // Column mapping
+    // Column mapping for ordering
     $columns = ['Id', 'FullName', 'Email', 'AccountType', 'Status', 'LastLogin'];
-    $orderColumn = $columns[$orderColumnIndex] ?? 'Id';
+    $orderColumn = isset($columns[$orderColumnIndex]) ? $columns[$orderColumnIndex] : 'Id';
     
     // Build WHERE conditions
     $whereConditions = [];
@@ -31,92 +32,158 @@ try {
     
     // Search filter
     if (!empty($searchValue)) {
-        $whereConditions[] = "(CONCAT(FirstName, ' ', LastName) LIKE ? OR Email LIKE ? OR Id LIKE ?)";
-        $searchTerm = "%$searchValue%";
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
-        $params[] = $searchTerm;
+        $whereConditions[] = "(CONCAT(FirstName, ' ', LastName) LIKE ? OR Email LIKE ?)";
+        $params[] = "%$searchValue%";
+        $params[] = "%$searchValue%";
     }
     
-    // Status filter
-    if (!empty($statusFilter)) {
+    // Status filter (only for students, admins don't have Status in the same enum)
+    if (!empty($statusFilter) && $roleFilter !== 'admin') {
         $whereConditions[] = "Status = ?";
         $params[] = ucfirst($statusFilter);
     }
     
-    $whereClause = !empty($whereConditions) ? " WHERE " . implode(" AND ", $whereConditions) : "";
+    $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
     
-    // Admins query
-    $adminSql = "SELECT 
-        Id, 
-        CONCAT(FirstName, ' ', LastName) as FullName,
-        Email,
-        Role,
-        Status,
-        LastLogin,
-        CreatedAt,
-        'admin' as AccountType
-    FROM admins" . $whereClause;
-    
-    // Skip admins if filtering for students only
-    if ($roleFilter === 'student') {
-        $adminSql = "SELECT * FROM (SELECT NULL as Id) as dummy WHERE 1=0";
-        $params = [];
-    }
-    
-    // Students query
-    $studentParams = $params;
-    $studentSql = "SELECT 
-        Id,
-        CONCAT(FirstName, ' ', LastName) as FullName,
-        Email,
-        Role,
-        Status,
-        LastLogin,
-        EntryDate as CreatedAt,
-        'student' as AccountType
-    FROM studentinfos" . $whereClause;
-    
-    // Skip students if filtering for admins only
+    // Determine which query to use based on role filter
     if ($roleFilter === 'admin') {
-        $studentSql = "SELECT * FROM (SELECT NULL as Id) as dummy WHERE 1=0";
-        $studentParams = [];
+        // Only admins
+        $dataQuery = "
+            SELECT 
+                Id,
+                CONCAT(FirstName, ' ', LastName) as FullName,
+                Email,
+                'admin' as AccountType,
+                Role,
+                Status,
+                LastLogin,
+                CreatedAt
+            FROM admins
+            $whereClause
+            ORDER BY $orderColumn $orderDir
+            LIMIT $start, $length
+        ";
+        
+        $countQuery = "
+            SELECT COUNT(*) as total 
+            FROM admins 
+            $whereClause
+        ";
+        
+        $totalQuery = "SELECT COUNT(*) as total FROM admins";
+        
+    } elseif ($roleFilter === 'student') {
+        // Only students
+        $dataQuery = "
+            SELECT 
+                Id,
+                CONCAT(FirstName, ' ', LastName) as FullName,
+                Email,
+                'student' as AccountType,
+                Role,
+                Status,
+                LastLogin,
+                EntryDate as CreatedAt
+            FROM studentinfos
+            $whereClause
+            ORDER BY $orderColumn $orderDir
+            LIMIT $start, $length
+        ";
+        
+        $countQuery = "
+            SELECT COUNT(*) as total 
+            FROM studentinfos 
+            $whereClause
+        ";
+        
+        $totalQuery = "SELECT COUNT(*) as total FROM studentinfos";
+        
+    } else {
+        // Both admins and students (UNION)
+        $dataQuery = "
+            SELECT 
+                Id,
+                CONCAT(FirstName, ' ', LastName) as FullName,
+                Email,
+                'admin' as AccountType,
+                Role,
+                Status,
+                LastLogin,
+                CreatedAt
+            FROM admins
+            " . ($whereClause ? $whereClause : "") . "
+            
+            UNION ALL
+            
+            SELECT 
+                Id,
+                CONCAT(FirstName, ' ', LastName) as FullName,
+                Email,
+                'student' as AccountType,
+                Role,
+                Status,
+                LastLogin,
+                EntryDate as CreatedAt
+            FROM studentinfos
+            " . ($whereClause ? $whereClause : "") . "
+            
+            ORDER BY $orderColumn $orderDir
+            LIMIT $start, $length
+        ";
+        
+        // For UNION, we need to duplicate params for both queries
+        $unionParams = array_merge($params, $params);
+        
+        $countQuery = "
+            SELECT COUNT(*) as total FROM (
+                SELECT Id FROM admins $whereClause
+                UNION ALL
+                SELECT Id FROM studentinfos $whereClause
+            ) as combined
+        ";
+        
+        $totalQuery = "
+            SELECT 
+                (SELECT COUNT(*) FROM admins) + 
+                (SELECT COUNT(*) FROM studentinfos) as total
+        ";
+        
+        $params = $unionParams; // Use duplicated params for UNION
     }
     
-    // Combined query for total count
-    $countSql = "SELECT COUNT(*) as total FROM (
-        ($adminSql) UNION ALL ($studentSql)
-    ) as combined";
+    // Execute queries
+    $stmt = $pdo->prepare($dataQuery);
+    $stmt->execute($params);
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    $countParams = array_merge($params, $studentParams);
-    $countStmt = $pdo->prepare($countSql);
-    $countStmt->execute($countParams);
-    $totalRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    // Get filtered count
+    $stmtCount = $pdo->prepare($countQuery);
+    $stmtCount->execute($params);
+    $recordsFiltered = $stmtCount->fetch()['total'];
     
-    // Combined query with pagination
-    $dataSql = "SELECT * FROM (
-        ($adminSql) UNION ALL ($studentSql)
-    ) as combined 
-    ORDER BY $orderColumn $orderDir 
-    LIMIT ? OFFSET ?";
+    // Get total count
+    $stmtTotal = $pdo->query($totalQuery);
+    $recordsTotal = $stmtTotal->fetch()['total'];
     
-    $dataParams = array_merge($params, $studentParams, [$length, $start]);
-    $dataStmt = $pdo->prepare($dataSql);
-    $dataStmt->execute($dataParams);
-    $data = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Response
+    // Return DataTable response
     echo json_encode([
         'draw' => $draw,
-        'recordsTotal' => $totalRecords,
-        'recordsFiltered' => $totalRecords,
+        'recordsTotal' => intval($recordsTotal),
+        'recordsFiltered' => intval($recordsFiltered),
         'data' => $data
     ]);
     
 } catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'error' => 'Database error: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    error_log("Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Error: ' . $e->getMessage()
     ]);
 }
 ?>
