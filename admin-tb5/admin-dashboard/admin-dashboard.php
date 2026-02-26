@@ -27,13 +27,7 @@ include('../sidebar/sidebar.php');
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="d-flex justify-content-md-end gap-2">
-                    <button class="btn btn-light btn-sm">
-                        <i class="bi bi-bell-fill me-1"></i>
-                        <span class="badge bg-danger">3</span>
-                    </button>
-                    <button class="btn btn-light btn-sm">
-                        <i class="bi bi-gear-fill"></i>
-                    </button>
+                   
                 </div>
             </div>
         </div>
@@ -129,25 +123,25 @@ include('../sidebar/sidebar.php');
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <a href="/admin-tb5/course-creation" class="btn btn-outline-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                <a href="../course-creation/course-creation.php" class="btn btn-outline-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2">
                                     <i class="bi bi-plus-circle" style="font-size: 1.3rem;"></i>
                                     <span class="fw-semibold">Create New Course</span>
                                 </a>
                             </div>
                             <div class="col-md-6">
-                                <a href="/admin-tb5/create-batch" class="btn btn-outline-success w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                <a href="../create-batch/create-batch.php" class="btn btn-outline-success w-100 py-3 d-flex align-items-center justify-content-center gap-2">
                                     <i class="bi bi-plus-circle" style="font-size: 1.3rem;"></i>
                                     <span class="fw-semibold">Create New Batch</span>
                                 </a>
                             </div>
                             <div class="col-md-6">
-                                <a href="/admin-tb5/documents-approval" class="btn btn-outline-warning w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                <a href="documents-approval.php" class="btn btn-outline-warning w-100 py-3 d-flex align-items-center justify-content-center gap-2">
                                     <i class="bi bi-check-circle" style="font-size: 1.3rem;"></i>
                                     <span class="fw-semibold">Review Documents</span>
                                 </a>
                             </div>
                             <div class="col-md-6">
-                                <a href="/admin-tb5/tor-grades" class="btn btn-outline-info w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                <a href="tor-grades.php" class="btn btn-outline-info w-100 py-3 d-flex align-items-center justify-content-center gap-2">
                                     <i class="bi bi-clipboard-data" style="font-size: 1.3rem;"></i>
                                     <span class="fw-semibold">Manage TOR Grades</span>
                                 </a>
