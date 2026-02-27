@@ -334,48 +334,175 @@ include '../includes/sidebar.php';
                                 </div>
                             </div>
                         </div>
+<!-- SECTION 3: ADDRESS (Editable) -->
+<h6 class="fw-bold mb-3 text-secondary small text-uppercase">
+    <i class="fas fa-map-marker-alt me-2"></i>Complete Address
+</h6>
+<div class="row g-2 mb-4">
+    <!-- Region -->
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select name="region" class="form-select" id="regionSelect" required>
+                <option value="" disabled selected>Select Region</option>
+                <!-- API will populate this -->
+            </select>
+            <label for="regionSelect">Region</label>
+        </div>
+    </div>
+    
+    <!-- Province -->
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select name="province" class="form-select" id="provinceSelect" required disabled>
+                <option value="" disabled selected>Select Province</option>
+            </select>
+            <label for="provinceSelect">Province</label>
+        </div>
+    </div>
+    
+    <!-- City/Municipality -->
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select name="city" class="form-select" id="citySelect" required disabled>
+                <option value="" disabled selected>Select City/Mun.</option>
+            </select>
+            <label for="citySelect">Municipality</label>
+        </div>
+    </div>
+    
+    <!-- Barangay -->
+    <div class="col-md-3">
+        <div class="form-floating">
+            <select name="barangay" class="form-select" id="brgySelect" required disabled>
+                <option value="" disabled selected>Select Barangay</option>
+            </select>
+            <label for="brgySelect">Barangay</label>
+        </div>
+    </div>
+</div>
 
-                        <!-- SECTION 3: ADDRESS (Editable) -->
-                        <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-                            <i class="fas fa-map-marker-alt me-2"></i>Complete Address
-                        </h6>
-                        <div class="row g-2 mb-4">
-                            <div class="col-md-3">
-                                <div class="form-floating">
-                                    <select name="region" class="form-select" id="regionSelect" required>
-                                        <option value="NCR" <?php echo ($user_data['region'] == 'NCR') ? 'selected':''; ?>>NCR</option>
-                                        <option value="Region IV-A" <?php echo ($user_data['region'] == 'Region IV-A') ? 'selected':''; ?>>Region IV-A</option>
-                                    </select>
-                                    <label>Region</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating">
-                                    <select name="province" class="form-select" id="provinceSelect" required>
-                                        <option value="Laguna" <?php echo ($user_data['province'] == 'Laguna') ? 'selected':''; ?>>Laguna</option>
-                                        <option value="Batangas" <?php echo ($user_data['province'] == 'Batangas') ? 'selected':''; ?>>Batangas</option>
-                                    </select>
-                                    <label>Province</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating">
-                                    <select name="city" class="form-select" id="citySelect" required>
-                                        <option value="San Pablo" <?php echo ($user_data['city'] == 'San Pablo') ? 'selected':''; ?>>San Pablo</option>
-                                        <option value="Calamba" <?php echo ($user_data['city'] == 'Calamba') ? 'selected':''; ?>>Calamba</option>
-                                    </select>
-                                    <label>Municipality</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating">
-                                    <select name="barangay" class="form-select" id="brgySelect" required>
-                                        <option value="Brgy VII-A" <?php echo ($user_data['barangay'] == 'Brgy VII-A') ? 'selected':''; ?>>Brgy VII-A</option>
-                                    </select>
-                                    <label>Barangay</label>
-                                </div>
-                            </div>
-                        </div>
+<!-- Add hidden inputs if you want to save the NAMES instead of CODES to your database -->
+<input type="hidden" name="region_name" id="region_name">
+<input type="hidden" name="province_name" id="province_name">
+<input type="hidden" name="city_name" id="city_name">
+<input type="hidden" name="barangay_name" id="barangay_name">
+
+<!-- PSGC API SCRIPT -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const apiBase = "https://psgc.gitlab.io/api";
+    
+    const regionSelect = document.getElementById('regionSelect');
+    const provinceSelect = document.getElementById('provinceSelect');
+    const citySelect = document.getElementById('citySelect');
+    const brgySelect = document.getElementById('brgySelect');
+
+    // 1. Load Regions
+    fetch(`${apiBase}/regions/`)
+        .then(response => response.json())
+        .then(data => {
+            data.sort((a, b) => a.name.localeCompare(b.name));
+            data.forEach(region => {
+                let opt = document.createElement('option');
+                opt.value = region.code; // We use code for the next API call
+                opt.text = region.name;
+                opt.dataset.name = region.name; // Store the name for the hidden input
+                regionSelect.add(opt);
+            });
+            
+            // PRE-SELECT logic if data exists from PHP
+            <?php if(!empty($user_data['region'])): ?>
+                // This part requires mapping names back to codes or saving codes in DB
+                // For now, let's focus on the dynamic loading
+            <?php endif; ?>
+        });
+
+    // 2. Region Change -> Load Provinces
+    regionSelect.addEventListener('change', function() {
+        provinceSelect.disabled = false;
+        provinceSelect.innerHTML = '<option value="" disabled selected>Select Province</option>';
+        citySelect.innerHTML = '<option value="" disabled selected>Select City/Mun.</option>';
+        citySelect.disabled = true;
+        brgySelect.innerHTML = '<option value="" disabled selected>Select Barangay</option>';
+        brgySelect.disabled = true;
+
+        document.getElementById('region_name').value = this.options[this.selectedIndex].text;
+
+        // Special Case: NCR has no provinces, it has Districts
+        if (this.value === "130000000") { // NCR Code
+            let opt = document.createElement('option');
+            opt.value = "130000000";
+            opt.text = "Metro Manila";
+            provinceSelect.add(opt);
+            provinceSelect.value = "130000000";
+            provinceSelect.dispatchEvent(new Event('change'));
+        } else {
+            fetch(`${apiBase}/regions/${this.value}/provinces/`)
+                .then(response => response.json())
+                .then(data => {
+                    data.sort((a, b) => a.name.localeCompare(b.name));
+                    data.forEach(prov => {
+                        let opt = document.createElement('option');
+                        opt.value = prov.code;
+                        opt.text = prov.name;
+                        provinceSelect.add(opt);
+                    });
+                });
+        }
+    });
+
+    // 3. Province Change -> Load Cities
+    provinceSelect.addEventListener('change', function() {
+        citySelect.disabled = false;
+        citySelect.innerHTML = '<option value="" disabled selected>Select City/Mun.</option>';
+        brgySelect.innerHTML = '<option value="" disabled selected>Select Barangay</option>';
+        brgySelect.disabled = true;
+
+        document.getElementById('province_name').value = this.options[this.selectedIndex].text;
+
+        // If NCR, fetch cities via Region code
+        let fetchUrl = (this.value === "130000000") 
+            ? `${apiBase}/regions/${this.value}/cities-municipalities/`
+            : `${apiBase}/provinces/${this.value}/cities-municipalities/`;
+
+        fetch(fetchUrl)
+            .then(response => response.json())
+            .then(data => {
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                data.forEach(city => {
+                    let opt = document.createElement('option');
+                    opt.value = city.code;
+                    opt.text = city.name;
+                    citySelect.add(opt);
+                });
+            });
+    });
+
+    // 4. City Change -> Load Barangays
+    citySelect.addEventListener('change', function() {
+        brgySelect.disabled = false;
+        brgySelect.innerHTML = '<option value="" disabled selected>Select Barangay</option>';
+
+        document.getElementById('city_name').value = this.options[this.selectedIndex].text;
+
+        fetch(`${apiBase}/cities-municipalities/${this.value}/barangays/`)
+            .then(response => response.json())
+            .then(data => {
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                data.forEach(brgy => {
+                    let opt = document.createElement('option');
+                    opt.value = brgy.code;
+                    opt.text = brgy.name;
+                    brgySelect.add(opt);
+                });
+            });
+    });
+
+    brgySelect.addEventListener('change', function() {
+        document.getElementById('barangay_name').value = this.options[this.selectedIndex].text;
+    });
+});
+</script>
 
                         <!-- SECTION 4: EDUCATIONAL BACKGROUND (Locked) -->
                         <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
