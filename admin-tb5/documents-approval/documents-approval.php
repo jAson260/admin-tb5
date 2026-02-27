@@ -1,6 +1,10 @@
 <?php
-// Include header
+session_start();
+require_once('../../includes/rbac-guard.php');
+
 include('../header/header.php');
+
+
 include('../sidebar/sidebar.php');
 ?>  
 
@@ -223,6 +227,42 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
+<!-- Approve Document Modal -->
+<div class="modal fade" id="approveDocumentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title text-success fw-bold">
+                    <i class="bi bi-check-circle-fill me-2"></i>Approve Document
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Approve Document?</h5>
+                <p class="text-muted mb-3">
+                    You are about to approve <strong id="approveDocumentType" class="text-dark"></strong><br>
+                    for <strong id="approveStudentName" class="text-dark"></strong>
+                </p>
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This document will be marked as <strong>verified and approved</strong>.
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success px-4" id="confirmApproveBtn">
+                    <i class="bi bi-check-circle me-1"></i>Approve Document
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -230,6 +270,11 @@ include('../sidebar/sidebar.php');
 
 <script>
 let documentsTable;
+let currentApproveId = null;
+let currentApproveType = null;
+let currentApproveStudent = null;
+let currentRejectId = null;
+let currentRejectType = null;
 
 // Course options for each school
 const courseOptions = {
@@ -377,6 +422,33 @@ $(document).ready(function() {
     });
     
     console.log('DataTable initialized');
+    
+    // ✅ ADD THESE EVENT LISTENERS
+    // Approve button click handler
+    $('#confirmApproveBtn').on('click', function() {
+        if (currentApproveId) {
+            confirmApprove();
+        }
+    });
+    
+    // Reject button click handler - update the selector to match modal button
+    $('#rejectDocumentModal .btn-danger').on('click', function() {
+        confirmReject();
+    });
+    
+    // Clear rejection reason when modal closes
+    $('#rejectDocumentModal').on('hidden.bs.modal', function() {
+        $('#rejectionReason').val('');
+        currentRejectId = null;
+        currentRejectType = null;
+    });
+    
+    // Clear approve modal data when it closes
+    $('#approveDocumentModal').on('hidden.bs.modal', function() {
+        currentApproveId = null;
+        currentApproveType = null;
+        currentApproveStudent = null;
+    });
 });
 
 // Update statistics cards
@@ -423,7 +495,7 @@ function getActionButtons(doc) {
         return `
             <div class="btn-group btn-group-sm">
                 ${baseButtons}
-                <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveDocument(${doc.id}, '${doc.documentType}')">
+                <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveDocument(${doc.id}, '${doc.documentType}', '${doc.studentName}')">
                     <i class="bi bi-check-lg"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="rejectDocument(${doc.id}, '${doc.documentType}')">
@@ -554,33 +626,70 @@ function viewDocument(path, type) {
 }
 
 // Approve document
-function approveDocument(id, type) {
-    if (confirm(`Are you sure you want to approve this ${type}?`)) {
-        fetch('approve-document.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, type })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Document approved successfully!');
-                documentsTable.ajax.reload(); // Reload table
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Network error occurred');
-        });
+function approveDocument(id, type, studentName) {
+    currentApproveId = id;
+    currentApproveType = type;
+    currentApproveStudent = studentName;
+    
+    $('#approveDocumentType').text(type);
+    $('#approveStudentName').text(studentName || 'this student');
+    
+    const modal = new bootstrap.Modal(document.getElementById('approveDocumentModal'));
+    modal.show();
+}
+
+// Confirm approve with loading state
+function confirmApprove() {
+    if (!currentApproveId) {
+        console.error('No approve ID set');
+        return;
     }
+    
+    const confirmBtn = $('#confirmApproveBtn');
+    const originalHtml = confirmBtn.html();
+    confirmBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Approving...');
+    
+    fetch('approve-document.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentApproveId, type: currentApproveType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('approveDocumentModal'));
+        modal.hide();
+        
+        // Reset button
+        confirmBtn.prop('disabled', false).html(originalHtml);
+        
+        if (data.success) {
+            showToast('success', 'Document Approved', `${currentApproveType} has been approved successfully!`);
+            documentsTable.ajax.reload();
+            
+            // Reset variables
+            currentApproveId = null;
+            currentApproveType = null;
+            currentApproveStudent = null;
+        } else {
+            showToast('error', 'Approval Failed', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('approveDocumentModal'));
+        if (modal) modal.hide();
+        
+        // Reset button
+        confirmBtn.prop('disabled', false).html(originalHtml);
+        
+        showToast('error', 'Network Error', 'Failed to approve document. Check console.');
+    });
 }
 
 // Reject document
-let currentRejectId = null;
-let currentRejectType = null;
-
 function rejectDocument(id, type) {
     currentRejectId = id;
     currentRejectType = type;
@@ -590,46 +699,90 @@ function rejectDocument(id, type) {
 }
 
 function confirmReject() {
+    if (!currentRejectId) {
+        console.error('No reject ID set');
+        return;
+    }
+    
     const reason = $('#rejectionReason').val();
     if (reason.trim() === '') {
         alert('Please provide a reason for rejection');
         return;
     }
     
+    const confirmBtn = $('#rejectDocumentModal .btn-danger');
+    const originalHtml = confirmBtn.html();
+    confirmBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Rejecting...');
+    
     fetch('reject-document.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: currentRejectId, type: currentRejectType, reason })
+        body: JSON.stringify({ id: currentRejectId, type: currentRejectType, reason: reason })
     })
     .then(response => response.json())
     .then(data => {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('rejectDocumentModal'));
+        modal.hide();
+        
+        // Reset button
+        confirmBtn.prop('disabled', false).html(originalHtml);
+        
         if (data.success) {
-            alert('Document rejected successfully!');
-            bootstrap.Modal.getInstance(document.getElementById('rejectDocumentModal')).hide();
+            showToast('success', 'Document Rejected', `${currentRejectType} has been rejected.`);
             $('#rejectionReason').val('');
-            documentsTable.ajax.reload(); // Reload table
+            documentsTable.ajax.reload();
+            
+            // Reset variables
+            currentRejectId = null;
+            currentRejectType = null;
         } else {
-            alert('Error: ' + data.message);
+            showToast('error', 'Rejection Failed', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Network error occurred');
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('rejectDocumentModal'));
+        if (modal) modal.hide();
+        
+        // Reset button
+        confirmBtn.prop('disabled', false).html(originalHtml);
+        
+        showToast('error', 'Network Error', 'Failed to reject document.');
     });
 }
 
-// Download document
-function downloadDocument(path) {
-    const link = document.createElement('a');
-    link.href = `/uploads/documents/${path}`;
-    link.download = path;
-    link.click();
+// Toast notification function
+function showToast(type, title, message) {
+    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+    const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
+    
+    const toast = `
+        <div class="toast align-items-center text-white ${bgColor} border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${icon} me-2"></i>
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(toast);
+    const toastElement = $('.toast').last()[0];
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    bsToast.show();
+    
+    // Remove from DOM after hidden
+    $(toastElement).on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
 }
 
-// View rejection reason
-function viewReason(id, remarks) {
-    alert(`Rejection Reason:\n\n${remarks}`);
-}
+// ...existing helper functions...
 </script>
 
 <?php include '../footer/footer.php'; ?>

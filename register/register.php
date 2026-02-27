@@ -1,35 +1,43 @@
 <?php 
-// Go up one level to find includes
 include '../includes/header.php'; 
 ?>
 
 <style>
-    /* Senior Dev Fix: Overriding the fixed height to allow scrolling for long forms */
     .login-page {
         height: auto !important; 
         min-height: 100vh;
-        padding-top: 50px;
-        padding-bottom: 50px;
+        padding: 50px 0;
         display: flex;
         align-items: center; 
         justify-content: center;
     }
     body { background-attachment: fixed; }
+    
+    /* Fix for unclickable buttons: ensures modal is always on top of backdrops */
+    .modal { z-index: 1060 !important; }
+    .modal-backdrop { z-index: 1050 !important; }
+    
+    .form-floating > label {
+        pointer-events: none !important;
+        width: calc(100% - 50px);
+    }
+    #pass::-ms-reveal, #pass::-ms-clear { display: none; }
+    .rounded-4 { border-radius: 1.2rem !important; }
 </style>
 
 <div class="login-page">
-    <div class="login-card shadow-lg p-4 p-md-5 mx-3" style="max-width: 850px;">
-        
+    <div class="login-card shadow-lg p-4 p-md-5 mx-3" style="max-width: 850px; background: #fff; border-radius: 1rem;">
+        <!-- Header -->
         <div class="text-center mb-4">
             <div class="d-flex justify-content-center gap-2 mb-2">
-                <img src="../img/logo1.png" alt="Logo" class="rounded-circle shadow-sm" style="height: 60px; width: 60px; object-fit: cover; border: 2px solid var(--royal-blue);">
-                <img src="../img/logo2.png" alt="Logo" class="rounded-circle shadow-sm" style="height: 60px; width: 60px; object-fit: cover; border: 2px solid var(--royal-blue);">
+                <img src="../img/logo1.png" style="height: 60px; width: 60px;" class="rounded-circle shadow-sm">
+                <img src="../img/logo2.png" style="height: 60px; width: 60px;" class="rounded-circle shadow-sm">
             </div>
             <h4 class="fw-bold text-dark mb-0">Create Trainee Account</h4>
             <p class="text-muted small">The Big Five Training & Assessment Center Inc.</p>
         </div>
 
-        <form id="registerForm"> <!-- ID added for JavaScript control -->
+        <form id="registerForm">
             
             <!-- SECTION 1: OFFICIAL NAME -->
 <h6 class="fw-bold text-royal mb-3"><i class="fas fa-user-tag me-2"></i>Official Name</h6>
@@ -112,49 +120,187 @@ include '../includes/header.php';
 </div>
             </div>
 
-            <!-- SECTION 4: ADDRESS -->
-            <h6 class="fw-bold text-royal mb-2" style="font-size: 0.95rem;"><i class="fas fa-map-marker-alt me-2"></i>Complete Address</h6>
-            <div class="row g-2 mb-4">
-                <div class="col-md-3">
-                    <div class="form-floating form-floating-sm">
-                        <select name="region" class="form-select" id="regionSelect" required>
-                            <option value="" selected disabled></option>
-                            <option value="NCR">NCR</option>
-                            <option value="Region IV-A">Region IV-A</option>
-                        </select>
-                        <label for="regionSelect">Region</label>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-floating form-floating-sm">
-                        <select name="province" class="form-select" id="provinceSelect" required>
-                            <option value="" selected disabled></option>
-                            <option value="Batangas">Batangas</option>
-                            <option value="Laguna">Laguna</option>
-                        </select>
-                        <label for="provinceSelect">Province</label>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-floating form-floating-sm">
-                        <select name="city" class="form-select" id="citySelect" required>
-                            <option value="" selected disabled></option>
-                            <option value="San Pablo">San Pablo</option>
-                            <option value="Calamba">Calamba</option>
-                        </select>
-                        <label for="citySelect">City</label>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-floating form-floating-sm">
-                        <select name="barangay" class="form-select" id="brgySelect" required>
-                            <option value="" selected disabled></option>
-                            <option value="Brgy VII-A">Brgy VII-A</option>
-                        </select>
-                        <label for="brgySelect">Barangay</label>
-                    </div>
-                </div>
-            </div>
+           <!-- SECTION 4: ADDRESS -->
+<h6 class="fw-bold text-royal mb-2" style="font-size: 0.95rem;">
+    <i class="fas fa-map-marker-alt me-2"></i>Complete Address
+</h6>
+
+<div class="row g-2 mb-2">
+    <div class="col-md-6">
+        <div class="form-floating form-floating-sm">
+            <input type="text" name="street" class="form-control" id="streetInput" placeholder="Street" required>
+            <label for="streetInput">House/Block/Lot No., Street</label>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-floating form-floating-sm">
+            <select name="region_code" class="form-select" id="regionSelect" required>
+                <option value="" selected disabled>Loading regions...</option>
+            </select>
+            <label for="regionSelect">Region</label>
+        </div>
+    </div>
+</div>
+
+<div class="row g-2 mb-4">
+    <div class="col-md-4">
+        <div class="form-floating form-floating-sm">
+            <select name="province_code" class="form-select" id="provinceSelect" required disabled>
+                <option value="" selected disabled>Select region first</option>
+            </select>
+            <label for="provinceSelect">Province</label>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="form-floating form-floating-sm">
+            <select name="city_code" class="form-select" id="citySelect" required disabled>
+                <option value="" selected disabled>Select province first</option>
+            </select>
+            <label for="citySelect">City/Municipality</label>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="form-floating form-floating-sm">
+            <select name="barangay_code" class="form-select" id="brgySelect" required disabled>
+                <option value="" selected disabled>Select city first</option>
+            </select>
+            <label for="brgySelect">Barangay</label>
+        </div>
+    </div>
+</div>
+
+<!-- HIDDEN INPUTS: These will store the actual names to be saved in your database -->
+<input type="hidden" name="region" id="region_name">
+<input type="hidden" name="province" id="province_name">
+<input type="hidden" name="city" id="city_name">
+<input type="hidden" name="barangay" id="barangay_name">
+
+<!-- ADDRESS API SCRIPT -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const apiBase = "https://psgc.gitlab.io/api";
+    
+    const regionSelect = document.getElementById('regionSelect');
+    const provinceSelect = document.getElementById('provinceSelect');
+    const citySelect = document.getElementById('citySelect');
+    const brgySelect = document.getElementById('brgySelect');
+
+    // Hidden fields to store names
+    const regionName = document.getElementById('region_name');
+    const provinceName = document.getElementById('province_name');
+    const cityName = document.getElementById('city_name');
+    const brgyName = document.getElementById('barangay_name');
+
+    // 1. Initial Load: Regions
+    fetch(`${apiBase}/regions/`)
+        .then(response => response.json())
+        .then(data => {
+            regionSelect.innerHTML = '<option value="" selected disabled>Select Region</option>';
+            data.sort((a, b) => a.name.localeCompare(b.name));
+            data.forEach(region => {
+                let opt = document.createElement('option');
+                opt.value = region.code;
+                opt.text = region.name;
+                regionSelect.add(opt);
+            });
+        })
+        .catch(err => {
+            regionSelect.innerHTML = '<option value="" disabled>Error loading regions</option>';
+            console.error("API Error:", err);
+        });
+
+    // 2. Region Change
+    regionSelect.addEventListener('change', function() {
+        regionName.value = this.options[this.selectedIndex].text; // Store Name
+        
+        // Reset and Disable children
+        provinceSelect.disabled = false;
+        provinceSelect.innerHTML = '<option value="" selected disabled>Loading...</option>';
+        citySelect.disabled = true;
+        citySelect.innerHTML = '<option value="" selected disabled>Select province first</option>';
+        brgySelect.disabled = true;
+        brgySelect.innerHTML = '<option value="" selected disabled>Select city first</option>';
+
+        // NCR Special Handling (NCR has no provinces)
+        if (this.value === "130000000") { 
+            let opt = document.createElement('option');
+            opt.value = "130000000";
+            opt.text = "Metro Manila";
+            provinceSelect.innerHTML = '';
+            provinceSelect.add(opt);
+            provinceSelect.value = "130000000";
+            provinceSelect.dispatchEvent(new Event('change')); // Trigger city load
+        } else {
+            fetch(`${apiBase}/regions/${this.value}/provinces/`)
+                .then(response => response.json())
+                .then(data => {
+                    provinceSelect.innerHTML = '<option value="" selected disabled>Select Province</option>';
+                    data.sort((a, b) => a.name.localeCompare(b.name));
+                    data.forEach(prov => {
+                        let opt = document.createElement('option');
+                        opt.value = prov.code;
+                        opt.text = prov.name;
+                        provinceSelect.add(opt);
+                    });
+                });
+        }
+    });
+
+    // 3. Province Change
+    provinceSelect.addEventListener('change', function() {
+        provinceName.value = this.options[this.selectedIndex].text; // Store Name
+        
+        citySelect.disabled = false;
+        citySelect.innerHTML = '<option value="" selected disabled>Loading...</option>';
+        brgySelect.disabled = true;
+        brgySelect.innerHTML = '<option value="" selected disabled>Select city first</option>';
+
+        // Load Cities based on Region (if NCR) or Province
+        let fetchUrl = (this.value === "130000000") 
+            ? `${apiBase}/regions/${this.value}/cities-municipalities/`
+            : `${apiBase}/provinces/${this.value}/cities-municipalities/`;
+
+        fetch(fetchUrl)
+            .then(response => response.json())
+            .then(data => {
+                citySelect.innerHTML = '<option value="" selected disabled>Select City/Mun.</option>';
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                data.forEach(city => {
+                    let opt = document.createElement('option');
+                    opt.value = city.code;
+                    opt.text = city.name;
+                    citySelect.add(opt);
+                });
+            });
+    });
+
+    // 4. City Change
+    citySelect.addEventListener('change', function() {
+        cityName.value = this.options[this.selectedIndex].text; // Store Name
+        
+        brgySelect.disabled = false;
+        brgySelect.innerHTML = '<option value="" selected disabled>Loading...</option>';
+
+        fetch(`${apiBase}/cities-municipalities/${this.value}/barangays/`)
+            .then(response => response.json())
+            .then(data => {
+                brgySelect.innerHTML = '<option value="" selected disabled>Select Barangay</option>';
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                data.forEach(brgy => {
+                    let opt = document.createElement('option');
+                    opt.value = brgy.code;
+                    opt.text = brgy.name;
+                    brgySelect.add(opt);
+                });
+            });
+    });
+
+    // 5. Barangay Change
+    brgySelect.addEventListener('change', function() {
+        brgyName.value = this.options[this.selectedIndex].text; // Store Name
+    });
+});
+</script>
 
             <!-- SECTION 5: EDUCATION -->
             <h6 class="fw-bold text-royal mb-3"><i class="fas fa-graduation-cap me-2"></i>Educational Background</h6>
@@ -187,44 +333,40 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <!-- SECTION 6: PASSWORD -->
-<h6 class="fw-bold text-royal mb-3"><i class="fas fa-key me-2"></i>Account Security</h6>
-<div class="form-floating mb-4 position-relative">
-    <input type="password" name="password" class="form-control" id="pass" placeholder="Password" required>
-    <label for="pass">Password</label>
-    
-    <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0" id="togglePassword" style="z-index: 10; background: transparent;">
-        <i class="fas fa-eye text-muted" id="eyeIcon" style="font-size: 1.2rem;"></i>
-    </button>
-</div>
+             <!-- SECTION 6: PASSWORD -->
+            <h6 class="fw-bold text-royal mb-3"><i class="fas fa-key me-2"></i>Account Security</h6>
+            <div class="form-floating mb-4 position-relative">
+                <input type="password" name="password" class="form-control pe-5" id="pass" placeholder="Password" required>
+                <label for="pass">Password</label>
+                <span class="position-absolute top-50 end-0 translate-middle-y me-3" id="togglePassword" style="cursor: pointer; z-index: 100;">
+                    <i class="fas fa-eye text-muted" id="eyeIcon" style="font-size: 1.1rem;"></i>
+                </span>
+            </div>
 
-<!-- Action Button -->
-<button type="button" id="btnRegister" class="btn btn-royal w-100 py-3 border-0 shadow-sm fw-bold rounded-pill">
-    REGISTER ACCOUNT
-</button>
+            <button type="button" id="btnRegister" class="btn btn-primary w-100 py-3 border-0 shadow-sm fw-bold rounded-pill">
+                REGISTER ACCOUNT
+            </button>
 
-<div class="mt-4 text-center">
-    <a href="/login/login" class="text-royal fw-bold text-decoration-none small">
-        <i class="fas fa-arrow-left me-1"></i> Back to Login
-    </a>
-</div>
-</form>
+            <div class="mt-4 text-center">
+                <a href="../login.php" class="text-decoration-none small fw-bold text-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Login
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- SUCCESS MODAL -->
 <div class="modal fade" id="regSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-body text-center p-5">
                 <div class="mb-4">
-                    <div class="mx-auto bg-success bg-opacity-10 d-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px;">
-                        <i class="fas fa-check-circle text-success" style="font-size: 50px;"></i>
-                    </div>
+                    <i class="fas fa-check-circle text-success" style="font-size: 60px;"></i>
                 </div>
-                <h4 class="fw-bold text-dark">Registration Successful!</h4>
+                <h4 class="fw-bold">Registration Successful!</h4>
                 <p class="text-muted small">Registration successfully submitted. Wait for the admin to review your account.</p>
-                <button type="button" class="btn btn-royal rounded-pill px-5 py-2 mt-2 shadow-sm fw-bold" id="confirmOk">
+                <button type="button" class="btn btn-primary rounded-pill px-5 py-2 mt-2 fw-bold" id="confirmOk">
                     OK
                 </button>
             </div>
@@ -232,135 +374,89 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- JavaScript Logic -->
+<!-- ERROR MODAL -->
+<div class="modal fade" id="regErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body text-center p-5">
+                <i class="fas fa-exclamation-triangle text-danger mb-4" style="font-size: 50px;"></i>
+                <h4 class="fw-bold">Registration Error</h4>
+                <p class="text-muted small" id="errorMessageText"></p>
+                <button type="button" class="btn btn-secondary rounded-pill px-5 fw-bold" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        console.log('DOM loaded, initializing registration form...');
-        
-        const form = document.getElementById('registerForm');
-        const regBtn = document.getElementById('btnRegister');
-        const successModal = new bootstrap.Modal(document.getElementById('regSuccessModal'));
-        const okBtn = document.getElementById('confirmOk');
-        
-        // Check if elements exist
-        if (!form || !regBtn) {
-            console.error('Form or button not found!');
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById('registerForm');
+    const regBtn = document.getElementById('btnRegister');
+    
+    // Initialize modals properly once
+    const successModal = new bootstrap.Modal(document.getElementById('regSuccessModal'));
+    const errorModal = new bootstrap.Modal(document.getElementById('regErrorModal'));
+
+    // 1. Password Toggle
+    const togglePassword = document.querySelector('#togglePassword');
+    const passInput = document.getElementById('pass');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function() {
+            const type = passInput.type === 'password' ? 'text' : 'password';
+            passInput.type = type;
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    // 2. Form Submission logic
+    regBtn.addEventListener('click', function(e) {
+        if (!form.checkValidity()) {
+            form.reportValidity();
             return;
         }
-        
-        console.log('Form and button found:', form, regBtn);
 
-        // Toggle Password Visibility
-        const togglePassword = document.querySelector('#togglePassword');
-        const passwordInput = document.querySelector('#pass');
-        const eyeIcon = document.querySelector('#eyeIcon');
+        // UI State: Loading
+        regBtn.disabled = true;
+        const originalText = regBtn.innerHTML;
+        regBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>PROCESSING...';
 
-if (togglePassword && passwordInput && eyeIcon) {
-    togglePassword.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Toggle password visibility
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        
-        // Toggle eye icon
-        if (type === 'text') {
-            // Password is visible
-            eyeIcon.classList.remove('fa-eye', 'text-muted');
-            eyeIcon.classList.add('fa-eye-slash', 'text-royal');
-        } else {
-            // Password is hidden
-            eyeIcon.classList.remove('fa-eye-slash', 'text-royal');
-            eyeIcon.classList.add('fa-eye', 'text-muted');
+        fetch('register-handler.php', {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success || data.status === 'success') {
+                // Show success and wait for OK click
+                successModal.show();
+            } else {
+                document.getElementById('errorMessageText').innerText = data.message || 'Error occurred.';
+                errorModal.show();
+                resetBtn();
+            }
+        })
+        .catch(error => {
+            document.getElementById('errorMessageText').innerText = 'Connection error. Please try again.';
+            errorModal.show();
+            resetBtn();
+        });
+
+        function resetBtn() {
+            regBtn.disabled = false;
+            regBtn.innerHTML = originalText;
         }
-        
-        console.log('Password visibility toggled to:', type);
     });
-    console.log('Password toggle initialized');
-}
-        // Register Button Click Handler
-        regBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Register button clicked!');
-            
-            // Check browser native validation
-            if (!form.checkValidity()) {
-                console.log('Form invalid, showing validation errors');
-                form.reportValidity();
-                return;
-            }
-            
-            console.log('Form valid, proceeding with submission...');
-            
-            // Disable button to prevent double submission
-            regBtn.disabled = true;
-            regBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>PROCESSING...';
-            
-            // Prepare form data
-            const formData = new FormData(form);
-            
-            // Debug: Log form data
-            console.log('=== Form Data ===');
-            for (let [key, value] of formData.entries()) {
-                console.log(key + ': ' + value);
-            }
-            
-            // Send AJAX request
-            fetch('register-handler.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('Response received:', response.status, response.statusText);
-                
-                if (!response.ok) {
-                    throw new Error('HTTP error! status: ' + response.status);
-                }
-                
-                return response.text();
-            })
-            .then(text => {
-                console.log('Raw response text:', text);
-                
-                // Try to parse as JSON
-                try {
-                    const data = JSON.parse(text);
-                    console.log('Parsed JSON:', data);
-                    
-                    if (data.success) {
-                        console.log('Registration successful!');
-                        form.reset();
-                        successModal.show();
-                    } else {
-                        console.error('Registration failed:', data.message);
-                        alert('Registration Error: ' + data.message);
-                    }
-                } catch (e) {
-                    console.error('JSON parse error:', e);
-                    console.error('Response was:', text);
-                    alert('Server returned invalid response. Check console.');
-                }
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                alert('Network error: ' + error.message + '\n\nCheck:\n1. Is register-handler.php accessible?\n2. Check browser console for details');
-            })
-            .finally(() => {
-                // Re-enable button
-                regBtn.disabled = false;
-                regBtn.innerHTML = 'REGISTER ACCOUNT';
-            });
-        });
 
-        // OK Button in Success Modal
-        okBtn.addEventListener('click', function() {
-            console.log('Redirecting to index...');
-            window.location.href = '../index.php';
-        });
-        
-        console.log('All event listeners registered successfully');
+    // 3. Success OK Button Redirect
+    document.getElementById('confirmOk').addEventListener('click', function() {
+        window.location.href = '../login.php';
     });
+});
+
 </script>
-
-

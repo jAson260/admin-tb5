@@ -102,34 +102,93 @@ include '../includes/header.php';
                             </div>
                         </div>
 
+<!-- SUBMISSION & PRIVACY AREA -->
+<div class="mt-5 border-top pt-4">
+    
+    <!-- Instruction Note & Data Privacy Container -->
+    <div class="row g-3">
+        <div class="col-12">
             <!-- Instruction Note -->
-                    <div class="mt-5 p-3 rounded-3 bg-light border-start border-primary border-4">
-                        <small class="text-muted d-block">
-                            <i class="fas fa-info-circle me-1 text-primary"></i> 
-                            Please ensure files are not larger than 5MB each. Supported formats: <b>.pdf, .jpg, .png</b>
-                        </small>
-                    </div>
+            <div class="p-3 rounded-3 bg-light border-start border-primary border-4 mb-3">
+                <small class="text-muted d-block">
+                    <i class="fas fa-info-circle me-1 text-primary"></i> 
+                    <strong>Note:</strong> Please ensure files are not larger than 5MB each. Supported formats: <b class="text-dark">.pdf, .jpg, .png</b>
+                </small>
+            </div>
 
             <!-- DATA PRIVACY SECTION -->
-                    <div class="mt-4 mb-2">
-                        <div class="form-check d-flex align-items-start p-3 rounded-3 border shadow-sm" style="background-color: #f0f4ff; border-left: 5px solid var(--royal-blue) !important;">
-                            <input class="form-check-input me-3 ms-0" type="checkbox" id="privacyCheck" style="width: 25px; height: 18px; cursor: pointer; border-color: var(--royal-blue);">
-                            <label class="form-check-label small text-dark mb-0" for="privacyCheck" style="cursor: pointer; line-height: 1.5;">
-                                <i class="fas fa-user-shield text-royal me-1"></i>
-                                I agree to the <strong>Terms & Conditions</strong> and understand that my personal details, valid ID's and Certificates will be kept confidential and used only for verification purposes following data privacy guidelines.
-                            </label>
-                        </div>
-                    </div>
+            <div class="form-check d-flex align-items-start p-3 rounded-3 border shadow-sm transition-all" 
+                 style="background-color: #f0f4ff; border-left: 5px solid var(--royal-blue, #002366) !important;">
+                
+                <!-- Responsive Checkbox: Added flex-shrink-0 to prevent squishing on mobile -->
+                <input class="form-check-input me-3 ms-0 flex-shrink-0" type="checkbox" id="privacyCheck" 
+                       style="width: 22px; height: 22px; cursor: pointer; border-color: var(--royal-blue, #002366);">
+                
+                <label class="form-check-label small text-dark mb-0" for="privacyCheck" style="cursor: pointer; line-height: 1.5;">
+                    <i class="fas fa-user-shield text-royal me-1"></i>
+                    I agree to the <strong>Terms & Conditions</strong> and understand that my personal details, valid ID's and Certificates will be kept confidential and used only for verification purposes following data privacy guidelines.
+                </label>
+            </div>
+        </div>
+    </div>
 
+    <!-- ACTION BUTTONS -->
+    <div class="text-end mt-4">
+       
+        <p id="privacyWarning" class="text-danger small mt-2">
+            <i class="fas fa-exclamation-triangle me-1"></i> Please check the privacy agreement to proceed.
+        </p>
+    </div>
+</div>
+
+<!-- JAVASCRIPT FOR LOGIC -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const privacyCheck = document.getElementById('privacyCheck');
+    const enrollBtn = document.getElementById('btnCompleteEnrollment');
+    const warningText = document.getElementById('privacyWarning');
+
+    privacyCheck.addEventListener('change', function() {
+        if (this.checked) {
+            // Enable button
+            enrollBtn.disabled = false;
+            enrollBtn.classList.remove('opacity-50');
+            warningText.classList.add('d-none');
+            enrollBtn.style.cursor = "pointer";
+        } else {
+            // Disable button
+            enrollBtn.disabled = true;
+            enrollBtn.classList.add('opacity-50');
+            warningText.classList.remove('d-none');
+            enrollBtn.style.cursor = "not-allowed";
+        }
+    });
+});
+</script>
+
+<style>
+/* Smooth hover effect for the privacy box */
+.transition-all {
+    transition: all 0.3s ease;
+}
+.form-check:hover {
+    background-color: #e8eeff !important;
+}
+/* Ensure the button looks disabled clearly */
+.btn-royal:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+</style>
                     <!-- Navigation Buttons -->
                     <div class="mt-5 d-flex justify-content-between border-top pt-4">
                         <a href="/enrollment" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-muted">
                             <i class="fas fa-chevron-left me-2"></i> Back
                         </a>
-                        
-                        <button type="submit" class="btn btn-royal rounded-pill px-5 py-3 shadow fw-bold" id="completeBtn">
-                            Complete Enrollment <i class="fas fa-check-circle ms-2"></i>
-                        </button>
+                       <!-- Button starts as DISABLED -->
+        <button type="submit" id="btnCompleteEnrollment" class="btn btn-royal rounded-pill px-5 py-2 fw-bold shadow-sm opacity-50" disabled>
+    Complete Enrollment <i class="fas fa-check-double ms-2"></i>
+    </button>
                     </div>
 
 <!-- SUCCESS MODAL (Remains the same) -->
@@ -150,114 +209,66 @@ include '../includes/header.php';
     </div>
 </div>
 
-<!-- JavaScript for Privacy Check, Form Submission, and Redirection -->
 <script>
-    // Logic to enable/disable button based on Privacy Checkbox
-    const privacyCheck = document.getElementById('privacyCheck');
-    const completeBtn = document.getElementById('completeBtn');
+document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');
+    const privacyCheck = document.getElementById('privacyCheck');
+    const completeBtn = document.getElementById('btnCompleteEnrollment');
+    const warningText = document.getElementById('privacyWarning');
     const successModal = new bootstrap.Modal(document.getElementById('enrollSuccessModal'));
 
-    // Initially disable the button
-    completeBtn.disabled = true;
-
+    // 1. Checkbox Logic
     privacyCheck.addEventListener('change', function() {
         if(this.checked) {
             completeBtn.disabled = false;
+            completeBtn.classList.remove('opacity-50');
+            warningText.classList.add('d-none');
         } else {
             completeBtn.disabled = true;
+            completeBtn.classList.add('opacity-50');
+            warningText.classList.remove('d-none');
         }
     });
 
-    // Handle form submission with AJAX
+    // 2. Form Submission via AJAX
     uploadForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        console.log('Form submitted');
-        
-        // Check if privacy checkbox is checked
-        if (!privacyCheck.checked) {
-            alert('Please agree to the Terms & Conditions and Data Privacy Policy.');
-            return;
-        }
-        
-        // Disable button and show loading
+        e.preventDefault(); // Prevents the raw JSON black screen
+
         completeBtn.disabled = true;
         completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
-        
-        // Prepare form data
-        const formData = new FormData(uploadForm);
-        
-        // Debug: Log form data
-        console.log('=== Form Data ===');
-        for (let [key, value] of formData.entries()) {
-            if (value instanceof File) {
-                console.log(key + ': ' + value.name + ' (' + value.size + ' bytes)');
-            } else {
-                console.log(key + ': ' + value);
-            }
-        }
-        
-        // Send AJAX request
+
+        const formData = new FormData(this);
+
         fetch('upload-documents-handler.php', {
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            console.log('Response received:', response.status, response.statusText);
-            
-            if (!response.ok) {
-                throw new Error('HTTP error! status: ' + response.status);
-            }
-            
-            return response.text();
-        })
-        .then(text => {
-            console.log('Raw response text:', text);
-            
-            // Try to parse as JSON
-            try {
-                const data = JSON.parse(text);
-                console.log('Parsed JSON:', data);
-                
-                if (data.success) {
-                    console.log('Upload successful!');
-                    
-                    // Show success modal
-                    successModal.show();
-                } else {
-                    console.error('Upload failed:', data.message);
-                    alert('Upload Error: ' + data.message);
-                }
-            } catch (e) {
-                console.error('JSON parse error:', e);
-                console.error('Response was:', text);
-                alert('Server returned invalid response. Check console for details.');
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                successModal.show();
+            } else {
+                alert('Error: ' + data.message);
+                resetBtn();
             }
         })
         .catch(error => {
-            console.error('Fetch error:', error);
-            alert('Network error: ' + error.message + '\n\nPlease check:\n1. File sizes (max 5MB each)\n2. File formats (PDF, JPG, PNG only)\n3. Browser console for details');
-        })
-        .finally(() => {
-            // Re-enable button
-            completeBtn.disabled = false;
-            completeBtn.innerHTML = 'Complete Enrollment <i class="fas fa-check-circle ms-2"></i>';
+            console.error('Error:', error);
+            alert('Something went wrong. Please try again.');
+            resetBtn();
         });
     });
 
-    // Redirect Logic
+    function resetBtn() {
+        completeBtn.disabled = false;
+        completeBtn.innerHTML = 'Complete Enrollment <i class="fas fa-check-double ms-2"></i>';
+    }
+
+    // 3. Simple Redirect
     document.getElementById('confirmRedirect').addEventListener('click', function() {
         window.location.href = '../dashboard/dashboard.php';
     });
+});
 </script>
 
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?php 
-include '../includes/footer.php'; 
-?>
+<?php include '../includes/footer.php'; ?>

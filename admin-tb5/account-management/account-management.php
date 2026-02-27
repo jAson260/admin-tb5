@@ -317,12 +317,51 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-danger bg-opacity-10">
+                <h5 class="modal-title text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="bi bi-trash-fill text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Delete Account?</h5>
+                <p class="text-muted mb-3">
+                    You are about to permanently delete the account for<br>
+                    <strong id="deleteAccountName" class="text-dark"></strong>
+                </p>
+                <div class="alert alert-danger mb-0">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone! All data associated with this account will be permanently deleted.
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger px-4" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let accountsTable;
 let currentApproveId = null;
 let currentApproveFullName = null;
 let currentRejectId = null;
 let currentRejectFullName = null;
+let currentDeleteId = null;
+let currentDeleteType = null;
+let currentDeleteFullName = null;
 
 $(document).ready(function() {
     // Initialize DataTable
@@ -405,6 +444,7 @@ $(document).ready(function() {
                     const isStudent = row.AccountType === 'student';
                     const isPending = status === 'Pending';
                     const isRejected = status === 'Rejected';
+                    const fullName = escapeHtml(row.FullName);
                     
                     let buttons = '<div class="btn-group btn-group-sm" role="group">';
                     
@@ -412,7 +452,7 @@ $(document).ready(function() {
                     if (isStudent && (isPending || isRejected)) {
                         buttons += `
                             <button class="btn btn-outline-success" title="Approve Account" 
-                                onclick="showApproveModal(${row.Id}, '${escapeHtml(row.FullName)}')">
+                                onclick="showApproveModal(${row.Id}, '${fullName}')">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                         `;
@@ -422,7 +462,7 @@ $(document).ready(function() {
                     if (isStudent && isPending) {
                         buttons += `
                             <button class="btn btn-outline-danger" title="Reject Account" 
-                                onclick="showRejectModal(${row.Id}, '${escapeHtml(row.FullName)}')">
+                                onclick="showRejectModal(${row.Id}, '${fullName}')">
                                 <i class="bi bi-x-circle"></i>
                             </button>
                         `;
@@ -435,11 +475,11 @@ $(document).ready(function() {
                             <i class="bi bi-eye"></i>
                         </button>
                         <button class="btn btn-outline-warning" title="Change Password" 
-                            onclick="changePassword(${row.Id}, '${row.AccountType}', '${escapeHtml(row.FullName)}')">
+                            onclick="changePassword(${row.Id}, '${row.AccountType}', '${fullName}')">
                             <i class="bi bi-key"></i>
                         </button>
                         <button class="btn btn-outline-danger" title="Delete Account" 
-                            onclick="deleteAccount(${row.Id}, '${row.AccountType}')">
+                            onclick="deleteAccount(${row.Id}, '${row.AccountType}', '${fullName}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>`;
@@ -497,6 +537,13 @@ $(document).ready(function() {
         }
         if (currentRejectId) {
             rejectAccount(currentRejectId, currentRejectFullName, reason);
+        }
+    });
+    
+    // Delete button click handler
+    $('#confirmDeleteBtn').on('click', function() {
+        if (currentDeleteId && currentDeleteType) {
+            performDeleteAccount(currentDeleteId, currentDeleteType, currentDeleteFullName);
         }
     });
     
@@ -618,45 +665,177 @@ function viewAccount(id, type) {
                 const account = data.account;
                 const isAdmin = type === 'admin';
                 
-                $('#accountDetailsBody').html(`
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="text-muted small">Account ID</label>
-                            <p class="fw-semibold">#${type.charAt(0).toUpperCase()}${account.Id}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Account Type</label>
-                            <p><span class="badge ${isAdmin ? 'bg-danger' : 'bg-info'}">${isAdmin ? 'Admin' : 'Student'}</span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Full Name</label>
-                            <p class="fw-semibold">${escapeHtml(account.FullName)}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Email</label>
-                            <p class="fw-semibold">${escapeHtml(account.Email)}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">${isAdmin ? 'Role' : 'Status'}</label>
-                            <p class="fw-semibold">${isAdmin ? account.Role : account.Status}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Last Login</label>
-                            <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Account Created</label>
-                            <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
-                        </div>
-                        ${!isAdmin && account.ULI ? `
-                        <div class="col-md-6">
-                            <label class="text-muted small">ULI Number</label>
-                            <p class="fw-semibold">${account.ULI}</p>
-                        </div>
-                        ` : ''}
-                    </div>
-                `);
+                let detailsHtml = '';
                 
+                if (isAdmin) {
+                    // Admin account details
+                    detailsHtml = `
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Account ID</label>
+                                <p class="fw-semibold">#A${account.Id}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Account Type</label>
+                                <p><span class="badge bg-danger">Admin</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Full Name</label>
+                                <p class="fw-semibold">${escapeHtml(account.FullName)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Email</label>
+                                <p class="fw-semibold">${escapeHtml(account.Email)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Role</label>
+                                <p><span class="badge bg-primary">${escapeHtml(account.Role)}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Status</label>
+                                <p>${getStatusBadge(account.Status)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Last Login</label>
+                                <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Account Created</label>
+                                <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Student account details - comprehensive view
+                    const fullAddress = [
+                        account.Street,
+                        account.BarangayName,
+                        account.CityName,
+                        account.ProvinceName,
+                        account.RegionName
+                    ].filter(Boolean).join(', ');
+                    
+                    detailsHtml = `
+                        <div class="row g-3">
+                            <!-- Profile Picture -->
+                            ${account.ProfilePicture ? `
+                            <div class="col-12 text-center mb-3">
+                                <img src="../../uploads/profile_pictures/${escapeHtml(account.ProfilePicture)}" 
+                                     class="rounded-circle border border-3 border-primary" 
+                                     style="width: 120px; height: 120px; object-fit: cover;">
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Basic Information -->
+                            <div class="col-12"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-person me-2"></i>Basic Information</h6></div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Student ID</label>
+                                <p class="fw-semibold">#S${account.Id}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">ULI Number</label>
+                                <p class="fw-semibold">${escapeHtml(account.ULI || 'N/A')}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Status</label>
+                                <p>${getStatusBadge(account.Status)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Full Name</label>
+                                <p class="fw-semibold">${escapeHtml(account.FirstName)} ${escapeHtml(account.MiddleName || '')} ${escapeHtml(account.LastName)} ${escapeHtml(account.ExtensionName || '')}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Email</label>
+                                <p class="fw-semibold">
+                                    ${escapeHtml(account.Email)}
+                                    ${account.EmailVerified == 1 ? '<span class="badge bg-success ms-1">Verified</span>' : '<span class="badge bg-warning ms-1">Not Verified</span>'}
+                                </p>
+                            </div>
+                            
+                            <!-- Personal Details -->
+                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-card-text me-2"></i>Personal Details</h6></div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Birth Date</label>
+                                <p class="fw-semibold">${formatDate(account.BirthDate)}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Age</label>
+                                <p class="fw-semibold">${account.Age} years old</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Sex</label>
+                                <p class="fw-semibold">${escapeHtml(account.Sex)}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Civil Status</label>
+                                <p class="fw-semibold">${escapeHtml(account.CivilStatus)}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Birth Place</label>
+                                <p class="fw-semibold">${escapeHtml(account.BirthPlace)}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Nationality</label>
+                                <p class="fw-semibold">${escapeHtml(account.Nationality)}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="text-muted small">Employment Status</label>
+                                <p class="fw-semibold">${escapeHtml(account.Employment)}</p>
+                            </div>
+                            
+                            <!-- Contact Information -->
+                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-telephone me-2"></i>Contact Information</h6></div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Contact Number</label>
+                                <p class="fw-semibold">${escapeHtml(account.ContactNo)}</p>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="text-muted small">Complete Address</label>
+                                <p class="fw-semibold">${escapeHtml(fullAddress)}</p>
+                            </div>
+                            
+                            <!-- Educational Background -->
+                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-mortarboard me-2"></i>Educational Background</h6></div>
+                            ${account.SecondarySchool ? `
+                            <div class="col-md-8">
+                                <label class="text-muted small">Secondary School</label>
+                                <p class="fw-semibold">${escapeHtml(account.SecondarySchool)}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Year Completed</label>
+                                <p class="fw-semibold">${account.SecondaryYearCompleted || 'N/A'}</p>
+                            </div>
+                            ` : '<div class="col-12"><p class="text-muted">No secondary school information</p></div>'}
+                            ${account.TertiarySchool ? `
+                            <div class="col-md-8">
+                                <label class="text-muted small">Tertiary School</label>
+                                <p class="fw-semibold">${escapeHtml(account.TertiarySchool)}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Year Completed</label>
+                                <p class="fw-semibold">${account.TertiaryYearCompleted || 'N/A'}</p>
+                            </div>
+                            ` : ''}
+                            
+                            <!-- Account Information -->
+                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-gear me-2"></i>Account Information</h6></div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Role</label>
+                                <p><span class="badge bg-info">${escapeHtml(account.Role)}</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Last Login</label>
+                                <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Registration Date</label>
+                                <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                $('#accountDetailsBody').html(detailsHtml);
                 const modal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
                 modal.show();
             } else {
@@ -728,34 +907,94 @@ function submitChangePassword() {
 }
 
 // Delete account
-function deleteAccount(id, type) {
-    if (confirm('Are you sure you want to delete this account? This action cannot be undone!')) {
-        $.ajax({
-            url: 'delete-account.php',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ id: id, type: type }),
-            dataType: 'json',
-            success: function(data) {
-                if (data.success) {
-                    alert('Account deleted successfully!');
-                    accountsTable.ajax.reload();
-                    updateStatistics();
-                } else {
-                    alert('Failed to delete account: ' + data.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error:', xhr.responseText, error);
-                alert('Failed to delete account. Check console for details.');
-            }
-        });
-    }
+function deleteAccount(id, type, fullName) {
+    currentDeleteId = id;
+    currentDeleteType = type;
+    currentDeleteFullName = fullName;
+    $('#deleteAccountName').text(fullName);
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+    modal.show();
 }
 
-// Export accounts
-function exportAccounts() {
-    window.location.href = 'export-accounts.php';
+// Perform delete account
+function performDeleteAccount(id, type, fullName) {
+    // Show loading state
+    const confirmBtn = $('#confirmDeleteBtn');
+    const originalHtml = confirmBtn.html();
+    confirmBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Deleting...');
+    
+    $.ajax({
+        url: 'delete-account.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ id: id, type: type }),
+        dataType: 'json',
+        success: function(data) {
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
+            modal.hide();
+            
+            // Reset button
+            confirmBtn.prop('disabled', false).html(originalHtml);
+            
+            if (data.success) {
+                // Show success message
+                showToast('success', 'Account Deleted', `${fullName}'s account has been deleted successfully.`);
+                
+                // Reload table and stats
+                accountsTable.ajax.reload();
+                updateStatistics();
+                
+                // Reset delete variables
+                currentDeleteId = null;
+                currentDeleteType = null;
+                currentDeleteFullName = null;
+            } else {
+                showToast('error', 'Delete Failed', data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', xhr.responseText, error);
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
+            modal.hide();
+            
+            // Reset button
+            confirmBtn.prop('disabled', false).html(originalHtml);
+            
+            showToast('error', 'Delete Failed', 'Failed to delete account. Check console for details.');
+        }
+    });
+}
+
+// Simple toast notification function
+function showToast(type, title, message) {
+    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+    const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
+    
+    const toast = `
+        <div class="toast align-items-center text-white ${bgColor} border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${icon} me-2"></i>
+                    <strong>${title}:</strong> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    $('body').append(toast);
+    const toastElement = $('.toast').last()[0];
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    bsToast.show();
+    
+    // Remove from DOM after hidden
+    $(toastElement).on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
 }
 
 // Helper functions
@@ -783,6 +1022,16 @@ function formatDateTime(dateStr) {
     });
 }
 
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+    });
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -793,3 +1042,4 @@ function escapeHtml(text) {
 <?php
     // Include footer
     include('../footer/footer.php');
+    ?>
