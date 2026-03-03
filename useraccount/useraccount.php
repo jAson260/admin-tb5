@@ -135,21 +135,27 @@ try {
 // Handle form submission for profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     try {
-        $region = trim($_POST['region'] ?? '');
-        $province = trim($_POST['province'] ?? '');
-        $city = trim($_POST['city'] ?? '');
-        $barangay = trim($_POST['barangay'] ?? '');
+        // Use the hidden input values that contain the NAMES, not the codes
+        $region = trim($_POST['region_name'] ?? '');
+        $province = trim($_POST['province_name'] ?? '');
+        $city = trim($_POST['city_name'] ?? '');
+        $barangay = trim($_POST['barangay_name'] ?? '');
         
-        $updateStmt = $pdo->prepare("
-            UPDATE studentinfos 
-            SET RegionName = ?, ProvinceName = ?, CityName = ?, BarangayName = ?
-            WHERE Id = ?
-        ");
-        
-        if ($updateStmt->execute([$region, $province, $city, $barangay, $_SESSION['user_id']])) {
-            $msg = "Address update request sent to admin for approval!";
-            header('Location: useraccount.php?success=address');
-            exit;
+        // Validate that names are not empty
+        if (empty($region) || empty($province) || empty($city) || empty($barangay)) {
+            $msg = "Please select all address fields";
+        } else {
+            $updateStmt = $pdo->prepare("
+                UPDATE studentinfos 
+                SET RegionName = ?, ProvinceName = ?, CityName = ?, BarangayName = ?
+                WHERE Id = ?
+            ");
+            
+            if ($updateStmt->execute([$region, $province, $city, $barangay, $_SESSION['user_id']])) {
+                $_SESSION['upload_success'] = "Address update request sent to admin for approval!";
+                header('Location: useraccount.php?success=address');
+                exit;
+            }
         }
         
     } catch(PDOException $e) {
@@ -334,15 +340,33 @@ include '../includes/sidebar.php';
                                 </div>
                             </div>
                         </div>
+
+                        <!-- PRE-SAVED CURRENT ADDRESS SECTION (NUMBER FIX HERE) -->
+                        <h6 class="fw-bold mb-3 text-secondary small text-uppercase mt-2"><i class="fas fa-home me-2"></i>Current Address <i class="fas fa-database ms-1" style="font-size: 10px;"></i></h6>
+                        <div class="row g-2 mb-4">
+                            <div class="col-md-3">
+                                <div class="form-floating"><input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['region']); ?>" readonly><label>Region</label></div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating"><input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['province']); ?>" readonly><label>Province</label></div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating"><input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['city']); ?>" readonly><label>City/Municipality</label></div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-floating"><input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars($user_data['barangay']); ?>" readonly><label>Barangay</label></div>
+                            </div>
+                        </div>
+        
 <!-- SECTION 3: ADDRESS (Editable) -->
 <h6 class="fw-bold mb-3 text-secondary small text-uppercase">
-    <i class="fas fa-map-marker-alt me-2"></i>Complete Address
+    <i class="fas fa-map-marker-alt me-2"></i>Change Address
 </h6>
 <div class="row g-2 mb-4">
     <!-- Region -->
     <div class="col-md-3">
         <div class="form-floating">
-            <select name="region" class="form-select" id="regionSelect" required>
+            <select class="form-select" id="regionSelect" required>
                 <option value="" disabled selected>Select Region</option>
                 <!-- API will populate this -->
             </select>
@@ -353,7 +377,7 @@ include '../includes/sidebar.php';
     <!-- Province -->
     <div class="col-md-3">
         <div class="form-floating">
-            <select name="province" class="form-select" id="provinceSelect" required disabled>
+            <select class="form-select" id="provinceSelect" required disabled>
                 <option value="" disabled selected>Select Province</option>
             </select>
             <label for="provinceSelect">Province</label>
@@ -363,7 +387,7 @@ include '../includes/sidebar.php';
     <!-- City/Municipality -->
     <div class="col-md-3">
         <div class="form-floating">
-            <select name="city" class="form-select" id="citySelect" required disabled>
+            <select class="form-select" id="citySelect" required disabled>
                 <option value="" disabled selected>Select City/Mun.</option>
             </select>
             <label for="citySelect">Municipality</label>
@@ -373,7 +397,7 @@ include '../includes/sidebar.php';
     <!-- Barangay -->
     <div class="col-md-3">
         <div class="form-floating">
-            <select name="barangay" class="form-select" id="brgySelect" required disabled>
+            <select class="form-select" id="brgySelect" required disabled>
                 <option value="" disabled selected>Select Barangay</option>
             </select>
             <label for="brgySelect">Barangay</label>
@@ -381,11 +405,11 @@ include '../includes/sidebar.php';
     </div>
 </div>
 
-<!-- Add hidden inputs if you want to save the NAMES instead of CODES to your database -->
-<input type="hidden" name="region_name" id="region_name">
-<input type="hidden" name="province_name" id="province_name">
-<input type="hidden" name="city_name" id="city_name">
-<input type="hidden" name="barangay_name" id="barangay_name">
+<!-- Hidden inputs that will store the NAMES (not codes) -->
+<input type="hidden" name="region_name" id="region_name" required>
+<input type="hidden" name="province_name" id="province_name" required>
+<input type="hidden" name="city_name" id="city_name" required>
+<input type="hidden" name="barangay_name" id="barangay_name" required>
 
 <!-- PSGC API SCRIPT -->
 <script>
