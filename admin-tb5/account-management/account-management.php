@@ -705,9 +705,13 @@ $(document).ready(function() {
 
         courseDropdown.prop('disabled', true).html('<option value="">Loading courses...</option>');
 
-        fetch('../create-batch/get-courses-by-school.php?school=' + encodeURIComponent(school))
-            .then(response => response.json())
-            .then(data => {
+        // FIXED: Use correct path ../create-batch/get-courses-by-school.php
+        $.ajax({
+            url: '../create-batch/get-courses-by-school.php',
+            method: 'GET',
+            data: { school: school },
+            dataType: 'json',
+            success: function(data) {
                 if (data.success && data.courses && data.courses.length > 0) {
                     let options = '<option value="">Select Course</option>';
                     data.courses.forEach(course => {
@@ -715,13 +719,14 @@ $(document).ready(function() {
                     });
                     courseDropdown.prop('disabled', false).html(options);
                 } else {
-                    courseDropdown.html('<option value="">No courses available</option>');
+                    courseDropdown.prop('disabled', true).html(`<option value="">${data.message || 'No courses available for ' + school}</option>`);
                 }
-            })
-            .catch(error => {
-                console.error('Error loading courses:', error);
-                courseDropdown.html('<option value="">Error loading courses</option>');
-            });
+            },
+            error: function(xhr) {
+                console.error('Error loading courses:', xhr.responseText);
+                courseDropdown.prop('disabled', true).html('<option value="">Error loading courses</option>');
+            }
+        });
     });
 
     // Load batches when course is selected
@@ -736,6 +741,7 @@ $(document).ready(function() {
 
         batchDropdown.prop('disabled', true).html('<option value="">Loading batches...</option>');
 
+        // FIXED: Use local get-batches-by-course.php (same folder)
         $.ajax({
             url: 'get-batches-by-course.php',
             method: 'GET',
@@ -745,17 +751,20 @@ $(document).ready(function() {
                 if (data.success && data.batches && data.batches.length > 0) {
                     let options = '<option value="">Select Batch</option>';
                     data.batches.forEach(batch => {
-                        const availability = batch.MaxStudents ? ` (${batch.CurrentStudents || 0}/${batch.MaxStudents})` : '';
-                        options += `<option value="${batch.Id}">${escapeHtml(batch.BatchCode)} - ${escapeHtml(batch.BatchName)}${availability}</option>`;
+                        const slots = batch.MaxStudents 
+                            ? ` (${batch.CurrentStudents || 0}/${batch.MaxStudents} slots)` 
+                            : '';
+                        const status = batch.Status !== 'Active' ? ` [${batch.Status}]` : '';
+                        options += `<option value="${batch.Id}">${escapeHtml(batch.BatchCode)} - ${escapeHtml(batch.BatchName)}${slots}${status}</option>`;
                     });
                     batchDropdown.prop('disabled', false).html(options);
                 } else {
-                    batchDropdown.html(`<option value="">${data.message || 'No active batches available'}</option>`);
+                    batchDropdown.prop('disabled', true).html(`<option value="">${data.message || 'No batches available'}</option>`);
                 }
             },
-            error: function(xhr, status, error) {
-                console.error('Batch loading error:', error);
-                batchDropdown.html('<option value="">Error loading batches</option>');
+            error: function(xhr) {
+                console.error('Batch loading error:', xhr.responseText);
+                batchDropdown.prop('disabled', true).html('<option value="">Error loading batches</option>');
             }
         });
     });
