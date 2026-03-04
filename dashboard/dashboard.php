@@ -1,9 +1,8 @@
-<?php 
+<?php
+
 session_start();
 require_once('../includes/rbac-guard.php');
 
-
-// Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Location: ../index.php');
     exit;
@@ -11,7 +10,6 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
 require_once('../db-connect.php');
 
-// 1. Unified path detection for nested folders
 $currentPath = $_SERVER['PHP_SELF']; 
 $currentDir = basename(dirname($currentPath));
 $subfolders = ['dashboard', 'enrollment', 'history', 'register', 'useraccount', 'forgot password', 'upload'];
@@ -20,11 +18,16 @@ $root = in_array($currentDir, $subfolders) ? '../' : '';
 include '../includes/header.php'; 
 include '../includes/sidebar.php'; 
 
-// Fetch logged-in user's name
 $trainee_name = "TRAINEE";
 $account_status = "Pending";
+$current_course = "No Active Course";
+$course_code = "";
+$enrollment_progress = 0;
+$docs_uploaded = 0;
+$docs_needed = 4; // PSA, TOR, Diploma, Form137 only
 
 try {
+    // Get user info
     $stmt = $pdo->prepare("
         SELECT FirstName, LastName, MiddleName, Status
         FROM studentinfos 
@@ -32,21 +35,87 @@ try {
         LIMIT 1
     ");
     $stmt->execute([$_SESSION['user_id']]);
-    $userData = $stmt->fetch();
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($userData) {
-        $trainee_name = strtoupper(trim($userData['FirstName'] . ' ' . ($userData['MiddleName'] ? substr($userData['MiddleName'], 0, 1) . '. ' : '') . $userData['LastName']));
+        $trainee_name = strtoupper(trim(
+            $userData['FirstName'] . ' ' . 
+            ($userData['MiddleName'] ? substr($userData['MiddleName'], 0, 1) . '. ' : '') . 
+            $userData['LastName']
+        ));
         $account_status = $userData['Status'];
     }
-} catch(PDOException $e) {
-    // Keep default name if error occurs
-}
 
-// MOCK DATA for other stats (keep existing)
-$current_course = "BREAD AND PASTRY PRODUCTION NC II";
-$docs_uploaded = 3;
-$docs_needed = 4;
-$enrollment_progress = 75; // Percent
+    // Get active course from enrollment_status -> courses
+    $courseStmt = $pdo->prepare("
+        SELECT 
+            c.CourseName,
+            c.CourseCode,
+            es.Status
+        FROM enrollment_status es
+        INNER JOIN courses c ON es.CourseId = c.Id
+        WHERE es.StudentInfoId = ?
+        ORDER BY es.Id DESC
+        LIMIT 1
+    ");
+    $courseStmt->execute([$_SESSION['user_id']]);
+    $courseData = $courseStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($courseData) {
+        $current_course = strtoupper($courseData['CourseName']);
+        $course_code = $courseData['CourseCode'];
+    } else {
+        // Fallback: Check qualificationenrollments table
+        $qualStmt = $pdo->prepare("
+            SELECT 
+                q.QualificationType AS CourseName,
+                qe.Status
+            FROM qualificationenrollments qe
+            INNER JOIN qualifications q ON qe.QualificationId = q.Id
+            WHERE qe.StudentInfoId = ?
+            ORDER BY qe.EnrollmentDate DESC
+            LIMIT 1
+        ");
+        $qualStmt->execute([$_SESSION['user_id']]);
+        $qualData = $qualStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($qualData) {
+            $current_course = strtoupper($qualData['CourseName']);
+        }
+    }
+
+    // Count uploaded documents - only 4 required documents
+    $docsStmt = $pdo->prepare("
+        SELECT 
+            (CASE WHEN PSAPath IS NOT NULL AND PSAPath != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN TORPath IS NOT NULL AND TORPath != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN DiplomaPath IS NOT NULL AND DiplomaPath != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN Form137Path IS NOT NULL AND Form137Path != '' THEN 1 ELSE 0 END)
+            AS uploaded_count
+        FROM documents
+        WHERE StudentInfoId = ?
+        LIMIT 1
+    ");
+    $docsStmt->execute([$_SESSION['user_id']]);
+    $docsData = $docsStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($docsData !== false) {
+        $docs_uploaded = (int)$docsData['uploaded_count'];
+    }
+
+    // Calculate enrollment progress based on docs
+    if ($docs_needed > 0) {
+        $enrollment_progress = round(($docs_uploaded / $docs_needed) * 100);
+    }
+
+    // Bonus progress if account is approved
+    if ($account_status === 'Approved') {
+        $enrollment_progress = min(100, $enrollment_progress + 20);
+    }
+
+} catch(PDOException $e) {
+    error_log("Dashboard Error: " . $e->getMessage());
+}
 ?>
 
 <style>
@@ -69,6 +138,7 @@ $enrollment_progress = 75; // Percent
     
     .status-widget { border: none; border-radius: 1rem; transition: 0.3s; }
     .status-widget:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important; }
+    .clickable { cursor: pointer; }
 
     .step-dot { height: 10px; width: 10px; background-color: #ddd; border-radius: 50%; display: inline-block; margin-right: 5px; }
     .step-active { background-color: var(--royal-blue); box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.2); }
@@ -95,13 +165,18 @@ $enrollment_progress = 75; // Percent
             </div>
         </div>
 
-   <div class="row mb-4">
+        <div class="row mb-4">
             <!-- Course Summary Card -->
             <div class="col-lg-6 mb-3">
                 <div class="card status-widget shadow-sm h-100 p-3">
                     <div class="card-body">
                         <h6 class="text-muted fw-bold small text-uppercase">Active Qualification</h6>
-                        <h4 class="fw-bold text-dark mt-2 mb-3"><?php echo $current_course; ?></h4>
+                        <h4 class="fw-bold text-dark mt-2 mb-3">
+                            <?php echo htmlspecialchars($current_course); ?>
+                            <?php if ($course_code): ?>
+                                <span class="badge bg-royal ms-2"><?php echo htmlspecialchars($course_code); ?></span>
+                            <?php endif; ?>
+                        </h4>
                         <div class="d-flex align-items-center mb-1">
                             <span class="small fw-bold text-royal">Enrollment Progress</span>
                             <span class="ms-auto small fw-bold text-royal"><?php echo $enrollment_progress; ?>%</span>
@@ -109,6 +184,14 @@ $enrollment_progress = 75; // Percent
                         <div class="progress rounded-pill" style="height: 10px;">
                             <div class="progress-bar bg-royal" role="progressbar" style="width: <?php echo $enrollment_progress; ?>%"></div>
                         </div>
+                        <?php if ($enrollment_progress == 100): ?>
+                            <small class="text-success mt-2 d-block"><i class="fas fa-check-circle me-1"></i>All requirements completed!</small>
+                        <?php else: ?>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <?php echo ($docs_needed - $docs_uploaded); ?> document(s) remaining
+                            </small>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -122,6 +205,19 @@ $enrollment_progress = 75; // Percent
                         </div>
                         <h3 class="fw-bold mb-0"><?php echo $docs_uploaded . "/" . $docs_needed; ?></h3>
                         <small class="text-muted">Docs Uploaded</small>
+                        <?php if ($docs_uploaded == $docs_needed): ?>
+                            <div class="mt-2">
+                                <span class="badge bg-success">Complete</span>
+                            </div>
+                        <?php elseif ($docs_uploaded > 0): ?>
+                            <div class="mt-2">
+                                <span class="badge bg-warning">In Progress</span>
+                            </div>
+                        <?php else: ?>
+                            <div class="mt-2">
+                                <span class="badge bg-secondary">Not Started</span>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -155,13 +251,25 @@ $enrollment_progress = 75; // Percent
                                 <span class="ms-auto badge bg-light text-success fw-bold">Done</span>
                             </li>
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                <div class="step-dot step-active"></div>
-                                <span>Upload PSA, TOR, & Diploma</span>
-                                <span class="ms-auto"><a href="<?php echo $root; ?>upload/upload.php" class="text-royal small fw-bold">Submit Files</a></span>
+                                <?php if ($docs_uploaded >= $docs_needed): ?>
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Upload Required Documents</span>
+                                    <span class="ms-auto badge bg-light text-success fw-bold">Done</span>
+                                <?php else: ?>
+                                    <div class="step-dot step-active"></div>
+                                    <span>Upload PSA, TOR, & Diploma</span>
+                                    <span class="ms-auto"><a href="<?php echo $root; ?>upload/upload.php" class="text-royal small fw-bold">Submit Files</a></span>
+                                <?php endif; ?>
                             </li>
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                <div class="step-dot"></div>
-                                <span class="text-muted">Pending Admin Review</span>
+                                <?php if ($account_status === 'Approved'): ?>
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Admin Review</span>
+                                    <span class="ms-auto badge bg-light text-success fw-bold">Approved</span>
+                                <?php else: ?>
+                                    <div class="step-dot <?php echo ($docs_uploaded >= $docs_needed) ? 'step-active' : ''; ?>"></div>
+                                    <span class="<?php echo ($docs_uploaded < $docs_needed) ? 'text-muted' : ''; ?>">Pending Admin Review</span>
+                                <?php endif; ?>
                             </li>
                         </ul>
                     </div>
@@ -175,10 +283,27 @@ $enrollment_progress = 75; // Percent
                         <h6 class="mb-0 fw-bold text-royal"><i class="fas fa-stream me-2"></i>Status Updates</h6>
                     </div>
                     <div class="card-body pt-0">
-                        <div class="alert bg-light border-0 small text-dark p-2 mb-2 d-flex">
-                            <i class="fas fa-clock me-2 mt-1 text-muted"></i>
-                            <div><strong>Current:</strong> No document issues found.</div>
-                        </div>
+                        <?php if ($docs_uploaded == 0): ?>
+                            <div class="alert bg-warning bg-opacity-10 border-0 small text-dark p-2 mb-2 d-flex">
+                                <i class="fas fa-exclamation-triangle me-2 mt-1 text-warning"></i>
+                                <div><strong>Action Required:</strong> Please upload your required documents to continue.</div>
+                            </div>
+                        <?php elseif ($docs_uploaded < $docs_needed): ?>
+                            <div class="alert bg-info bg-opacity-10 border-0 small text-dark p-2 mb-2 d-flex">
+                                <i class="fas fa-info-circle me-2 mt-1 text-info"></i>
+                                <div><strong>In Progress:</strong> You have uploaded <?php echo $docs_uploaded; ?> out of <?php echo $docs_needed; ?> documents.</div>
+                            </div>
+                        <?php elseif ($account_status === 'Approved'): ?>
+                            <div class="alert bg-success bg-opacity-10 border-0 small text-dark p-2 mb-2 d-flex">
+                                <i class="fas fa-check-circle me-2 mt-1 text-success"></i>
+                                <div><strong>All Set!</strong> Your account and documents are verified.</div>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert bg-light border-0 small text-dark p-2 mb-2 d-flex">
+                                <i class="fas fa-clock me-2 mt-1 text-muted"></i>
+                                <div><strong>Awaiting Review:</strong> Your documents are under admin review.</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -224,6 +349,5 @@ $enrollment_progress = 75; // Percent
         </div>
     </div>
 </div>
-
 
 <?php include '../includes/footer.php'; ?>

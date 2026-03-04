@@ -46,15 +46,15 @@ RewriteRule ^([^/]+)/([^/]+)$ $1/$2.php [L]
 # Redirect if .php is accessed directly (EXCEPT specific files)
 RewriteCond %{THE_REQUEST} ^GET.*\.php [NC]
 RewriteCond %{REQUEST_URI} !^/(404|403|500|hash-password)\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/(404|403|500|hash-password)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/(404|403|500|hash-password)\.php$
 RewriteCond %{REQUEST_URI} !/(login|register)/.*-handler\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/login/(login-handler|logout|refresh-session)\.php$
-RewriteCond %{REQUEST_URI} !/register/(register-handler|get-psgc-data)\.php$
-RewriteCond %{REQUEST_URI} !/enrollment/upload-documents-handler\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/account-management/(get-accounts|get-account-details|get-statistics|change-password|delete-account|export-accounts|approve-account|reject-account|toggle-status)\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/documents-approval/(get-documents|approve-document|reject-document)\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/course-creation/(get-courses|get-course-details|save-course|delete-course|toggle-course-status)\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/tor-grades/(get-students|get-student-info|get-student-courses|get-tor-records|get-tor-statistics|generate-tor|view-tor|download-tor|delete-tor|regenerate-tor|create-directories)\.php$
-RewriteCond %{REQUEST_URI} !/admin-tb5/create-batch/(get-batches|get-batch-statistics|get-courses-by-school|save-batch|delete-batch|get-batch-details)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/login/(login-handler|logout|refresh-session)\.php$
+RewriteCond %{REQUEST_URI} !^/register/(register-handler|get-psgc-data)\.php$
+RewriteCond %{REQUEST_URI} !^/enrollment/upload-documents-handler\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/account-management/(get-accounts|get-account-details|get-statistics|change-password|delete-account|export-accounts|approve-account|reject-account|toggle-status)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/documents-approval/(get-documents|get-courses-filter|fetch_notifications|approve-document|reject-document)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/course-creation/(get-courses|get-course-details|save-course|delete-course|toggle-course-status)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/tor-grades/(get-students|get-student-info|get-student-courses|get-tor-records|get-tor-statistics|generate-tor|view-tor|download-tor|delete-tor|regenerate-tor|create-directories)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/create-batch/(get-batches|get-batch-statistics|get-courses-by-school|save-batch|delete-batch|get-batch-details)\.php$
 RewriteCond %{REQUEST_URI} !(admin-dashboard|logs|student-records|account-management|print-management|documents-approval|tor-grades|course-creation|create-batch|profile|enrollment)\.php
 RewriteRule ^(.*)\.php$ /$1 [R=301,L]
