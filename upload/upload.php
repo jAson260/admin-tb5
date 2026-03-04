@@ -387,12 +387,3 @@ document.addEventListener("DOMContentLoaded", function() {
     <?php endif; ?>
 });
 </script>
-
-<style>
-:root { --royal-blue: #667eea; }
-.text-royal { color: var(--royal-blue) !important; }
-.btn-royal { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; }
-.btn-royal:hover { opacity: 0.9; color: white; }
-.border-dashed { border-style: dashed !important; border-color: #d1d9e6 !important; } 
-.btn-link:hover { opacity:0.8; }
-</style>

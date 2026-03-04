@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');

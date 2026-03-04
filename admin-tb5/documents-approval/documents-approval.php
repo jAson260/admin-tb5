@@ -1,10 +1,50 @@
 <?php
 session_start();
 require_once('../../includes/rbac-guard.php');
+require_once('../../db-connect.php');
+
+// Handle AJAX request for courses
+if (isset($_GET['action']) && $_GET['action'] === 'get_courses') {
+    header('Content-Type: application/json');
+    
+    $school = $_GET['school'] ?? '';
+    
+    if (empty($school)) {
+        echo json_encode(['success' => false, 'message' => 'School parameter required']);
+        exit;
+    }
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT 
+                Id,
+                CourseCode,
+                CourseName,
+                School
+            FROM courses 
+            WHERE School = ? AND IsActive = 1 
+            ORDER BY CourseName ASC
+        ");
+        
+        $stmt->execute([strtoupper($school)]);
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'courses' => $courses
+        ]);
+        
+    } catch (PDOException $e) {
+        error_log('Get Courses Filter Error: ' . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'message' => 'Database error: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
 
 include('../header/header.php');
-
-
 include('../sidebar/sidebar.php');
 ?>  
 
@@ -524,27 +564,57 @@ function getActionButtons(doc) {
     }
 }
 
-// School filter - dynamically populate course dropdown
+// School filter - dynamically load courses
 $('#schoolFilter').on('change', function() {
-    const school = this.value;
+    const school = $(this).val();
     const courseDropdown = $('#documentTypeFilter');
     
-    // Clear existing options
-    courseDropdown.html('<option value="">All Courses</option>');
+    console.log('School selected:', school);
     
-    if (school && courseOptions[school]) {
-        // Enable dropdown and populate with courses
-        courseDropdown.prop('disabled', false);
-        courseOptions[school].forEach(course => {
-            courseDropdown.append(`<option value="${course.value}">${course.text}</option>`);
-        });
-    } else {
-        // Disable dropdown if no school selected
-        courseDropdown.prop('disabled', true);
+    if (!school) {
+        courseDropdown.html('<option value="">Course</option>').prop('disabled', true);
+        applyCustomFilters();
+        return;
     }
     
-    // Apply filter
-    applyCustomFilters();
+    courseDropdown.html('<option value="">Loading courses...</option>').prop('disabled', true);
+    
+    // Updated fetch URL to use the same file with action parameter
+    fetch('documents-approval.php?action=get_courses&school=' + encodeURIComponent(school))
+        .then(function(response) {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(function(data) {
+            console.log('Courses loaded:', data);
+            
+            courseDropdown.html('<option value="">All Courses</option>');
+            
+            if (data.success && data.courses && data.courses.length > 0) {
+                courseDropdown.prop('disabled', false);
+                
+                data.courses.forEach(function(course) {
+                    const option = $('<option></option>')
+                        .val(course.CourseCode.toLowerCase())
+                        .text(course.CourseCode + ' - ' + course.CourseName);
+                    courseDropdown.append(option);
+                });
+            } else {
+                courseDropdown.html('<option value="">No courses available</option>').prop('disabled', true);
+                
+                if (!data.success) {
+                    console.error('Error loading courses:', data.message);
+                    showToast('error', 'Error', 'Failed to load courses: ' + data.message);
+                }
+            }
+            
+            applyCustomFilters();
+        })
+        .catch(function(error) {
+            console.error('Error fetching courses:', error);
+            courseDropdown.html('<option value="">Error loading courses</option>').prop('disabled', true);
+            showToast('error', 'Network Error', 'Failed to load courses.');
+        });
 });
 
 // Course filter

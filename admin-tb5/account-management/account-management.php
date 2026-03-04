@@ -111,9 +111,17 @@ include('../sidebar/sidebar.php');
         <!-- Filters Section -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
-                <div class="row g-3 align-items-center">
-                    <!-- Role Filter -->
-                    <div class="col-md-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Search Accounts</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchAccounts" placeholder="Search by name, email, or ID...">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label small text-muted mb-1">Account Type</label>
                         <select class="form-select" id="roleFilter">
                             <option value="">All Accounts</option>
@@ -121,9 +129,7 @@ include('../sidebar/sidebar.php');
                             <option value="student">Students Only</option>
                         </select>
                     </div>
-                    
-                    <!-- Status Filter -->
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small text-muted mb-1">Status</label>
                         <select class="form-select" id="statusFilter">
                             <option value="">All Status</option>
@@ -134,18 +140,12 @@ include('../sidebar/sidebar.php');
                             <option value="rejected">Rejected</option>
                         </select>
                     </div>
-                    
-                    <!-- Reset Button -->
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">&nbsp;</label>
+                    <div class="col-md-2">
                         <button class="btn btn-outline-secondary w-100" id="resetFilters">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                         </button>
                     </div>
-
-                    <!-- Add Account Button -->
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted mb-1">&nbsp;</label>
+                    <div class="col-md-2">
                         <button class="btn btn-primary w-100" onclick="showAddAccountModal()">
                             <i class="bi bi-plus-circle me-1"></i> Add Account
                         </button>
@@ -157,15 +157,23 @@ include('../sidebar/sidebar.php');
         <!-- Accounts Table -->
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-table me-2"></i>Account List
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-table me-2"></i>Account List
+                    </h5>
+                    <button class="btn btn-success btn-sm" onclick="showAssignCourseBatchModal()">
+                        <i class="bi bi-clipboard-check me-1"></i>Assign Course and Batch
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive p-3">
                     <table class="table table-hover align-middle" id="accountsTable" style="width:100%">
                         <thead>
                             <tr>
+                                <th class="text-center" style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
@@ -175,17 +183,105 @@ include('../sidebar/sidebar.php');
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- DataTables will populate this -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActionsBar" class="card border-0 shadow-sm mt-3" style="display: none;">
+            <div class="card-body py-2">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <span class="fw-semibold">
+                            <i class="bi bi-check-square me-2"></i>
+                            <span id="selectedCount">0</span> account(s) selected
+                        </span>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="$('.account-checkbox').prop('checked', false); updateBulkActions();">
+                            <i class="bi bi-x-circle me-1"></i>Clear Selection
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Approve Account Modal -->
+<!-- ==================== ADD ACCOUNT MODAL ==================== -->
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-shield-plus me-2"></i>Add New Admin Account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addAccountForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addFirstName" placeholder="Enter first name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addLastName" placeholder="Enter last name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="addUsername" placeholder="Enter username" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="addEmail" placeholder="Enter email address" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="addPassword" placeholder="Enter password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleAddPassword()">
+                                    <i class="bi bi-eye" id="addPasswordEyeIcon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Minimum 8 characters</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                            <select class="form-select" id="addRole" required>
+                                <option value="">Select Role</option>
+                                <option value="SuperAdmin">Super Admin</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Staff">Staff</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select class="form-select" id="addStatus">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Suspended">Suspended</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary px-4" id="submitAddAccountBtn" onclick="submitAddAccount()">
+                    <i class="bi bi-shield-plus me-1"></i>Create Admin Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== APPROVE ACCOUNT MODAL ==================== -->
 <div class="modal fade" id="approveModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -219,7 +315,7 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
-<!-- Reject Account Modal -->
+<!-- ==================== REJECT ACCOUNT MODAL ==================== -->
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -243,7 +339,7 @@ include('../sidebar/sidebar.php');
                         <i class="bi bi-pencil-square me-1"></i>Rejection Reason <span class="text-danger">*</span>
                     </label>
                     <textarea class="form-control" id="rejectionReason" rows="4" 
-                              placeholder="Please provide a reason for rejection (e.g., Incomplete documents, Invalid credentials, etc.)" 
+                              placeholder="Please provide a reason for rejection..." 
                               required></textarea>
                     <div class="form-text">This message will be sent to the user.</div>
                 </div>
@@ -258,7 +354,7 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
-<!-- View Account Details Modal -->
+<!-- ==================== VIEW ACCOUNT MODAL ==================== -->
 <div class="modal fade" id="viewAccountModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -268,9 +364,7 @@ include('../sidebar/sidebar.php');
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="accountDetailsBody">
-                <!-- Account details will be loaded here -->
-            </div>
+            <div class="modal-body" id="accountDetailsBody"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
@@ -278,7 +372,7 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
-<!-- Change Password Modal -->
+<!-- ==================== CHANGE PASSWORD MODAL ==================== -->
 <div class="modal fade" id="changePasswordModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -317,7 +411,7 @@ include('../sidebar/sidebar.php');
     </div>
 </div>
 
-<!-- Delete Account Modal -->
+<!-- ==================== DELETE ACCOUNT MODAL ==================== -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -338,7 +432,7 @@ include('../sidebar/sidebar.php');
                 </p>
                 <div class="alert alert-danger mb-0">
                     <i class="bi bi-exclamation-circle me-2"></i>
-                    <strong>Warning:</strong> This action cannot be undone! All data associated with this account will be permanently deleted.
+                    <strong>Warning:</strong> This action cannot be undone!
                 </div>
             </div>
             <div class="modal-footer border-0 justify-content-center">
@@ -347,6 +441,64 @@ include('../sidebar/sidebar.php');
                 </button>
                 <button type="button" class="btn btn-danger px-4" id="confirmDeleteBtn">
                     <i class="bi bi-trash me-1"></i>Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ASSIGN COURSE AND BATCH MODAL ==================== -->
+<div class="modal fade" id="assignCourseBatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title text-success fw-bold">
+                    <i class="bi bi-clipboard-check me-2"></i>Assign Course and Batch
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Select students from the table and assign them to a course and batch.
+                </div>
+                <form id="assignCourseBatchForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="assignSchool" class="form-label fw-semibold">School <span class="text-danger">*</span></label>
+                            <select class="form-select" id="assignSchool" required>
+                                <option value="">Select School</option>
+                                <option value="TB5">TB5</option>
+                                <option value="BBI">BBI</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="assignCourse" class="form-label fw-semibold">Course <span class="text-danger">*</span></label>
+                            <select class="form-select" id="assignCourse" required disabled>
+                                <option value="">Select School First</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="assignBatch" class="form-label fw-semibold">Batch <span class="text-danger">*</span></label>
+                            <select class="form-select" id="assignBatch" required disabled>
+                                <option value="">Select Course First</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mt-4">
+                            <label class="form-label fw-semibold">Selected Students</label>
+                            <div id="selectedStudentsList" class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                                <p class="text-muted mb-0 text-center">No students selected</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success px-4" onclick="submitAssignCourseBatch()">
+                    <i class="bi bi-check-circle me-1"></i>Assign to Students
                 </button>
             </div>
         </div>
@@ -374,13 +526,22 @@ $(document).ready(function() {
             data: function(d) {
                 d.roleFilter = $('#roleFilter').val();
                 d.statusFilter = $('#statusFilter').val();
+                d.search = $('#searchAccounts').val();
             },
             error: function(xhr, error, thrown) {
                 console.error('DataTable Error:', error, thrown, xhr.responseText);
-                alert('Error loading data. Please check console for details.');
             }
         },
         columns: [
+            { 
+                data: null,
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `<input type="checkbox" class="form-check-input account-checkbox" value="${row.Id}" data-type="${row.AccountType}">`;
+                }
+            },
             { 
                 data: 'Id',
                 render: function(data, type, row) {
@@ -395,7 +556,6 @@ $(document).ready(function() {
                     const iconClass = isAdmin ? 'bi-shield-fill-check' : 'bi-person-fill';
                     const iconColor = isAdmin ? 'danger' : 'primary';
                     const subtitle = isAdmin ? row.Role : 'Student';
-                    
                     return `
                         <div class="d-flex align-items-center">
                             <div class="bg-${iconColor} bg-opacity-10 rounded-circle p-2 me-2">
@@ -411,24 +571,18 @@ $(document).ready(function() {
             },
             { 
                 data: 'Email',
-                render: function(data) {
-                    return escapeHtml(data);
-                }
+                render: function(data) { return escapeHtml(data); }
             },
             { 
                 data: 'AccountType',
                 render: function(data) {
                     const isAdmin = data === 'admin';
-                    const badgeClass = isAdmin ? 'bg-danger' : 'bg-info';
-                    const label = isAdmin ? 'Admin' : 'Student';
-                    return `<span class="badge ${badgeClass}">${label}</span>`;
+                    return `<span class="badge ${isAdmin ? 'bg-danger' : 'bg-info'}">${isAdmin ? 'Admin' : 'Student'}</span>`;
                 }
             },
             { 
                 data: 'Status',
-                render: function(data) {
-                    return getStatusBadge(data);
-                }
+                render: function(data) { return getStatusBadge(data); }
             },
             { 
                 data: 'LastLogin',
@@ -448,40 +602,17 @@ $(document).ready(function() {
                     
                     let buttons = '<div class="btn-group btn-group-sm" role="group">';
                     
-                    // Show Approve button for Pending or Rejected student accounts
                     if (isStudent && (isPending || isRejected)) {
-                        buttons += `
-                            <button class="btn btn-outline-success" title="Approve Account" 
-                                onclick="showApproveModal(${row.Id}, '${fullName}')">
-                                <i class="bi bi-check-circle"></i>
-                            </button>
-                        `;
+                        buttons += `<button class="btn btn-outline-success" title="Approve Account" onclick="showApproveModal(${row.Id}, '${fullName}')"><i class="bi bi-check-circle"></i></button>`;
                     }
-                    
-                    // Show Reject button for Pending student accounts
                     if (isStudent && isPending) {
-                        buttons += `
-                            <button class="btn btn-outline-danger" title="Reject Account" 
-                                onclick="showRejectModal(${row.Id}, '${fullName}')">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                        `;
+                        buttons += `<button class="btn btn-outline-danger" title="Reject Account" onclick="showRejectModal(${row.Id}, '${fullName}')"><i class="bi bi-x-circle"></i></button>`;
                     }
                     
-                    // View Details button (always visible)
                     buttons += `
-                        <button class="btn btn-outline-info" title="View Details" 
-                            onclick="viewAccount(${row.Id}, '${row.AccountType}')">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-warning" title="Change Password" 
-                            onclick="changePassword(${row.Id}, '${row.AccountType}', '${fullName}')">
-                            <i class="bi bi-key"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" title="Delete Account" 
-                            onclick="deleteAccount(${row.Id}, '${row.AccountType}', '${fullName}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <button class="btn btn-outline-info" title="View Details" onclick="viewAccount(${row.Id}, '${row.AccountType}')"><i class="bi bi-eye"></i></button>
+                        <button class="btn btn-outline-warning" title="Change Password" onclick="changePassword(${row.Id}, '${row.AccountType}', '${fullName}')"><i class="bi bi-key"></i></button>
+                        <button class="btn btn-outline-danger" title="Delete Account" onclick="deleteAccount(${row.Id}, '${row.AccountType}', '${fullName}')"><i class="bi bi-trash"></i></button>
                     </div>`;
                     
                     return buttons;
@@ -490,12 +621,10 @@ $(document).ready(function() {
         ],
         pageLength: 10,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-        order: [[0, 'desc']],
+        order: [[1, 'desc']],
         responsive: true,
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6">>rtip',
         language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search accounts...",
             lengthMenu: "Show _MENU_ entries",
             info: "Showing _START_ to _END_ of _TOTAL_ accounts",
             infoEmpty: "No accounts found",
@@ -504,59 +633,207 @@ $(document).ready(function() {
             emptyTable: "No accounts available",
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
         },
-        drawCallback: function(settings) {
-            updateStatistics();
-        }
+        drawCallback: function() { updateStatistics(); }
     });
 
-    // Filter change events
-    $('#roleFilter, #statusFilter').on('change', function() {
-        accountsTable.ajax.reload();
+    // Custom search with debounce
+    let searchTimeout;
+    $('#searchAccounts').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() { accountsTable.ajax.reload(); }, 500);
     });
+
+    // Filter changes
+    $('#roleFilter, #statusFilter').on('change', function() { accountsTable.ajax.reload(); });
 
     // Reset filters
     $('#resetFilters').on('click', function() {
+        $('#searchAccounts').val('');
         $('#roleFilter').val('');
         $('#statusFilter').val('');
-        accountsTable.search('').columns().search('').draw();
+        accountsTable.ajax.reload();
     });
-    
-    // Approve button click handler
+
+    // Select all checkboxes
+    $('#selectAll').on('change', function() {
+        $('.account-checkbox').prop('checked', this.checked);
+        updateBulkActions();
+    });
+
+    // Individual checkbox change
+    $(document).on('change', '.account-checkbox', function() {
+        updateBulkActions();
+        const total = $('.account-checkbox').length;
+        const checked = $('.account-checkbox:checked').length;
+        $('#selectAll').prop('checked', total === checked);
+    });
+
+    // Approve confirm button
     $('#confirmApproveBtn').on('click', function() {
-        if (currentApproveId) {
-            approveAccount(currentApproveId, currentApproveFullName);
-        }
+        if (currentApproveId) approveAccount(currentApproveId, currentApproveFullName);
     });
-    
-    // Reject button click handler
+
+    // Reject confirm button
     $('#confirmRejectBtn').on('click', function() {
         const reason = $('#rejectionReason').val().trim();
-        if (!reason) {
-            alert('Please provide a rejection reason!');
-            return;
-        }
-        if (currentRejectId) {
-            rejectAccount(currentRejectId, currentRejectFullName, reason);
-        }
+        if (!reason) { alert('Please provide a rejection reason!'); return; }
+        if (currentRejectId) rejectAccount(currentRejectId, currentRejectFullName, reason);
     });
-    
-    // Delete button click handler
+
+    // Delete confirm button
     $('#confirmDeleteBtn').on('click', function() {
         if (currentDeleteId && currentDeleteType) {
             performDeleteAccount(currentDeleteId, currentDeleteType, currentDeleteFullName);
         }
     });
-    
-    // Clear rejection reason when modal closes
-    $('#rejectModal').on('hidden.bs.modal', function() {
-        $('#rejectionReason').val('');
+
+    // Clear rejection reason on modal close
+    $('#rejectModal').on('hidden.bs.modal', function() { $('#rejectionReason').val(''); });
+
+    // Load courses when school is selected
+    $('#assignSchool').on('change', function() {
+        const school = $(this).val();
+        const courseDropdown = $('#assignCourse');
+        const batchDropdown = $('#assignBatch');
+
+        batchDropdown.prop('disabled', true).html('<option value="">Select Course First</option>');
+
+        if (!school) {
+            courseDropdown.prop('disabled', true).html('<option value="">Select School First</option>');
+            return;
+        }
+
+        courseDropdown.prop('disabled', true).html('<option value="">Loading courses...</option>');
+
+        fetch('../create-batch/get-courses-by-school.php?school=' + encodeURIComponent(school))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.courses && data.courses.length > 0) {
+                    let options = '<option value="">Select Course</option>';
+                    data.courses.forEach(course => {
+                        options += `<option value="${course.Id}">${escapeHtml(course.CourseCode)} - ${escapeHtml(course.CourseName)}</option>`;
+                    });
+                    courseDropdown.prop('disabled', false).html(options);
+                } else {
+                    courseDropdown.html('<option value="">No courses available</option>');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading courses:', error);
+                courseDropdown.html('<option value="">Error loading courses</option>');
+            });
     });
-    
+
+    // Load batches when course is selected
+    $('#assignCourse').on('change', function() {
+        const courseId = $(this).val();
+        const batchDropdown = $('#assignBatch');
+
+        if (!courseId) {
+            batchDropdown.prop('disabled', true).html('<option value="">Select Course First</option>');
+            return;
+        }
+
+        batchDropdown.prop('disabled', true).html('<option value="">Loading batches...</option>');
+
+        $.ajax({
+            url: 'get-batches-by-course.php',
+            method: 'GET',
+            data: { courseId: courseId },
+            dataType: 'json',
+            success: function(data) {
+                if (data.success && data.batches && data.batches.length > 0) {
+                    let options = '<option value="">Select Batch</option>';
+                    data.batches.forEach(batch => {
+                        const availability = batch.MaxStudents ? ` (${batch.CurrentStudents || 0}/${batch.MaxStudents})` : '';
+                        options += `<option value="${batch.Id}">${escapeHtml(batch.BatchCode)} - ${escapeHtml(batch.BatchName)}${availability}</option>`;
+                    });
+                    batchDropdown.prop('disabled', false).html(options);
+                } else {
+                    batchDropdown.html(`<option value="">${data.message || 'No active batches available'}</option>`);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Batch loading error:', error);
+                batchDropdown.html('<option value="">Error loading batches</option>');
+            }
+        });
+    });
+
     // Initial statistics load
     updateStatistics();
 });
 
-// Update statistics
+// ==================== ADD ACCOUNT FUNCTIONS ====================
+function showAddAccountModal() {
+    $('#addAccountForm')[0].reset();
+    const modal = new bootstrap.Modal(document.getElementById('addAccountModal'));
+    modal.show();
+}
+
+function toggleAddPassword() {
+    const input = $('#addPassword');
+    const icon = $('#addPasswordEyeIcon');
+    if (input.attr('type') === 'password') {
+        input.attr('type', 'text');
+        icon.removeClass('bi-eye').addClass('bi-eye-slash');
+    } else {
+        input.attr('type', 'password');
+        icon.removeClass('bi-eye-slash').addClass('bi-eye');
+    }
+}
+
+function submitAddAccount() {
+    const firstName = $('#addFirstName').val().trim();
+    const lastName  = $('#addLastName').val().trim();
+    const username  = $('#addUsername').val().trim();
+    const email     = $('#addEmail').val().trim();
+    const password  = $('#addPassword').val();
+    const role      = $('#addRole').val();
+    const status    = $('#addStatus').val();
+
+    if (!firstName || !lastName || !username || !email || !password || !role) {
+        alert('Please fill in all required fields!');
+        return;
+    }
+
+    if (password.length < 8) {
+        alert('Password must be at least 8 characters long!');
+        return;
+    }
+
+    const submitBtn = $('#submitAddAccountBtn');
+    const originalHtml = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Creating...');
+
+    $.ajax({
+        url: 'add-account.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ firstName, lastName, username, email, password, role, status }),
+        dataType: 'json',
+        success: function(response) {
+            submitBtn.prop('disabled', false).html(originalHtml);
+            if (response.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+                modal.hide();
+                $('#addAccountForm')[0].reset();
+                accountsTable.ajax.reload();
+                updateStatistics();
+                showToast('success', 'Account Created', `${firstName} ${lastName}'s admin account has been created successfully.`);
+            } else {
+                showToast('error', 'Creation Failed', response.message || 'Failed to create account.');
+            }
+        },
+        error: function(xhr) {
+            submitBtn.prop('disabled', false).html(originalHtml);
+            console.error('Error:', xhr.responseText);
+            showToast('error', 'Creation Failed', 'An error occurred. Check console for details.');
+        }
+    });
+}
+
+// ==================== EXISTING FUNCTIONS ====================
 function updateStatistics() {
     $.ajax({
         url: 'get-statistics.php',
@@ -570,32 +847,25 @@ function updateStatistics() {
                 $('#statActive').text(data.statistics.active);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Statistics Error:', error);
-        }
+        error: function(xhr, status, error) { console.error('Statistics Error:', error); }
     });
 }
 
-// Show approve modal
 function showApproveModal(id, fullName) {
     currentApproveId = id;
     currentApproveFullName = fullName;
     $('#approveAccountName').text(fullName);
-    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('approveModal')).show();
 }
 
-// Show reject modal
 function showRejectModal(id, fullName) {
     currentRejectId = id;
     currentRejectFullName = fullName;
     $('#rejectAccountName').text(fullName);
     $('#rejectionReason').val('');
-    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
 
-// Approve account
 function approveAccount(id, fullName) {
     $.ajax({
         url: 'approve-account.php',
@@ -604,10 +874,7 @@ function approveAccount(id, fullName) {
         data: JSON.stringify({ id: id }),
         dataType: 'json',
         success: function(data) {
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('approveModal'));
-            modal.hide();
-            
+            bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
             if (data.success) {
                 accountsTable.ajax.reload();
                 updateStatistics();
@@ -615,14 +882,10 @@ function approveAccount(id, fullName) {
                 alert('Failed to approve account: ' + data.message);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error:', xhr.responseText, error);
-            alert('Failed to approve account. Check console for details.');
-        }
+        error: function(xhr) { console.error('Error:', xhr.responseText); }
     });
 }
 
-// Reject account
 function rejectAccount(id, fullName, reason) {
     $.ajax({
         url: 'reject-account.php',
@@ -631,10 +894,7 @@ function rejectAccount(id, fullName, reason) {
         data: JSON.stringify({ id: id, reason: reason }),
         dataType: 'json',
         success: function(data) {
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
-            modal.hide();
-            
+            bootstrap.Modal.getInstance(document.getElementById('rejectModal')).hide();
             if (data.success) {
                 accountsTable.ajax.reload();
                 updateStatistics();
@@ -642,362 +902,242 @@ function rejectAccount(id, fullName, reason) {
                 alert('Failed to reject account: ' + data.message);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error:', xhr.responseText, error);
-            alert('Failed to reject account. Check console for details.');
-        }
+        error: function(xhr) { console.error('Error:', xhr.responseText); }
     });
 }
 
-// View account details
 function viewAccount(id, type) {
-    console.log('ViewAccount called - ID:', id, 'Type:', type);
-    
     $.ajax({
         url: 'get-account-details.php',
         method: 'GET',
         data: { id: id, type: type },
         dataType: 'json',
         success: function(data) {
-            console.log('Server response:', data);
-            
             if (data.success) {
                 const account = data.account;
                 const isAdmin = type === 'admin';
-                
                 let detailsHtml = '';
-                
+
                 if (isAdmin) {
-                    // Admin account details
                     detailsHtml = `
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="text-muted small">Account ID</label>
-                                <p class="fw-semibold">#A${account.Id}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Account Type</label>
-                                <p><span class="badge bg-danger">Admin</span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Full Name</label>
-                                <p class="fw-semibold">${escapeHtml(account.FullName)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Email</label>
-                                <p class="fw-semibold">${escapeHtml(account.Email)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Role</label>
-                                <p><span class="badge bg-primary">${escapeHtml(account.Role)}</span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Status</label>
-                                <p>${getStatusBadge(account.Status)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Last Login</label>
-                                <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Account Created</label>
-                                <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
-                            </div>
-                        </div>
-                    `;
+                            <div class="col-md-6"><label class="text-muted small">Account ID</label><p class="fw-semibold">#A${account.Id}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Account Type</label><p><span class="badge bg-danger">Admin</span></p></div>
+                            <div class="col-md-6"><label class="text-muted small">Full Name</label><p class="fw-semibold">${escapeHtml(account.FullName)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Email</label><p class="fw-semibold">${escapeHtml(account.Email)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Role</label><p><span class="badge bg-primary">${escapeHtml(account.Role)}</span></p></div>
+                            <div class="col-md-6"><label class="text-muted small">Status</label><p>${getStatusBadge(account.Status)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Last Login</label><p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Account Created</label><p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p></div>
+                        </div>`;
                 } else {
-                    // Student account details - comprehensive view
-                    const fullAddress = [
-                        account.Street,
-                        account.BarangayName,
-                        account.CityName,
-                        account.ProvinceName,
-                        account.RegionName
-                    ].filter(Boolean).join(', ');
-                    
+                    const fullAddress = [account.Street, account.BarangayName, account.CityName, account.ProvinceName, account.RegionName].filter(Boolean).join(', ');
                     detailsHtml = `
                         <div class="row g-3">
-                            <!-- Profile Picture -->
-                            ${account.ProfilePicture ? `
-                            <div class="col-12 text-center mb-3">
-                                <img src="../../uploads/profile_pictures/${escapeHtml(account.ProfilePicture)}" 
-                                     class="rounded-circle border border-3 border-primary" 
-                                     style="width: 120px; height: 120px; object-fit: cover;">
-                            </div>
-                            ` : ''}
-                            
-                            <!-- Basic Information -->
                             <div class="col-12"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-person me-2"></i>Basic Information</h6></div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Student ID</label>
-                                <p class="fw-semibold">#S${account.Id}</p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">ULI Number</label>
-                                <p class="fw-semibold">${escapeHtml(account.ULI || 'N/A')}</p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Status</label>
-                                <p>${getStatusBadge(account.Status)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Full Name</label>
-                                <p class="fw-semibold">${escapeHtml(account.FirstName)} ${escapeHtml(account.MiddleName || '')} ${escapeHtml(account.LastName)} ${escapeHtml(account.ExtensionName || '')}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Email</label>
-                                <p class="fw-semibold">
-                                    ${escapeHtml(account.Email)}
-                                    ${account.EmailVerified == 1 ? '<span class="badge bg-success ms-1">Verified</span>' : '<span class="badge bg-warning ms-1">Not Verified</span>'}
-                                </p>
-                            </div>
-                            
-                            <!-- Personal Details -->
+                            <div class="col-md-4"><label class="text-muted small">Student ID</label><p class="fw-semibold">#S${account.Id}</p></div>
+                            <div class="col-md-4"><label class="text-muted small">ULI Number</label><p class="fw-semibold">${escapeHtml(account.ULI || 'N/A')}</p></div>
+                            <div class="col-md-4"><label class="text-muted small">Status</label><p>${getStatusBadge(account.Status)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Full Name</label><p class="fw-semibold">${escapeHtml(account.FirstName)} ${escapeHtml(account.MiddleName || '')} ${escapeHtml(account.LastName)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Email</label><p class="fw-semibold">${escapeHtml(account.Email)}</p></div>
                             <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-card-text me-2"></i>Personal Details</h6></div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Birth Date</label>
-                                <p class="fw-semibold">${formatDate(account.BirthDate)}</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Age</label>
-                                <p class="fw-semibold">${account.Age} years old</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Sex</label>
-                                <p class="fw-semibold">${escapeHtml(account.Sex)}</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Civil Status</label>
-                                <p class="fw-semibold">${escapeHtml(account.CivilStatus)}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Birth Place</label>
-                                <p class="fw-semibold">${escapeHtml(account.BirthPlace)}</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Nationality</label>
-                                <p class="fw-semibold">${escapeHtml(account.Nationality)}</p>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Employment Status</label>
-                                <p class="fw-semibold">${escapeHtml(account.Employment)}</p>
-                            </div>
-                            
-                            <!-- Contact Information -->
-                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-telephone me-2"></i>Contact Information</h6></div>
-                            <div class="col-md-6">
-                                <label class="text-muted small">Contact Number</label>
-                                <p class="fw-semibold">${escapeHtml(account.ContactNo)}</p>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="text-muted small">Complete Address</label>
-                                <p class="fw-semibold">${escapeHtml(fullAddress)}</p>
-                            </div>
-                            
-                            <!-- Educational Background -->
-                            <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-mortarboard me-2"></i>Educational Background</h6></div>
-                            ${account.SecondarySchool ? `
-                            <div class="col-md-8">
-                                <label class="text-muted small">Secondary School</label>
-                                <p class="fw-semibold">${escapeHtml(account.SecondarySchool)}</p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Year Completed</label>
-                                <p class="fw-semibold">${account.SecondaryYearCompleted || 'N/A'}</p>
-                            </div>
-                            ` : '<div class="col-12"><p class="text-muted">No secondary school information</p></div>'}
-                            ${account.TertiarySchool ? `
-                            <div class="col-md-8">
-                                <label class="text-muted small">Tertiary School</label>
-                                <p class="fw-semibold">${escapeHtml(account.TertiarySchool)}</p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Year Completed</label>
-                                <p class="fw-semibold">${account.TertiaryYearCompleted || 'N/A'}</p>
-                            </div>
-                            ` : ''}
-                            
-                            <!-- Account Information -->
+                            <div class="col-md-3"><label class="text-muted small">Birth Date</label><p class="fw-semibold">${formatDate(account.BirthDate)}</p></div>
+                            <div class="col-md-3"><label class="text-muted small">Age</label><p class="fw-semibold">${account.Age} years old</p></div>
+                            <div class="col-md-3"><label class="text-muted small">Sex</label><p class="fw-semibold">${escapeHtml(account.Sex)}</p></div>
+                            <div class="col-md-3"><label class="text-muted small">Civil Status</label><p class="fw-semibold">${escapeHtml(account.CivilStatus)}</p></div>
+                            <div class="col-md-6"><label class="text-muted small">Contact Number</label><p class="fw-semibold">${escapeHtml(account.ContactNo)}</p></div>
+                            <div class="col-md-12"><label class="text-muted small">Complete Address</label><p class="fw-semibold">${escapeHtml(fullAddress)}</p></div>
                             <div class="col-12 mt-3"><h6 class="fw-bold text-primary border-bottom pb-2"><i class="bi bi-gear me-2"></i>Account Information</h6></div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Role</label>
-                                <p><span class="badge bg-info">${escapeHtml(account.Role)}</span></p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Last Login</label>
-                                <p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="text-muted small">Registration Date</label>
-                                <p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p>
-                            </div>
-                        </div>
-                    `;
+                            <div class="col-md-4"><label class="text-muted small">Last Login</label><p class="fw-semibold">${account.LastLogin ? formatDateTime(account.LastLogin) : 'Never'}</p></div>
+                            <div class="col-md-4"><label class="text-muted small">Registration Date</label><p class="fw-semibold">${formatDateTime(account.CreatedAt)}</p></div>
+                        </div>`;
                 }
-                
+
                 $('#accountDetailsBody').html(detailsHtml);
-                const modal = new bootstrap.Modal(document.getElementById('viewAccountModal'));
-                modal.show();
+                new bootstrap.Modal(document.getElementById('viewAccountModal')).show();
             } else {
-                console.error('Server error:', data.message);
                 alert('Failed to load account details: ' + data.message);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error:', {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                responseText: xhr.responseText,
-                error: error
-            });
-            alert('Failed to load account details. Error: ' + xhr.status + ' - Check browser console.');
-        }
+        error: function(xhr) { console.error('AJAX Error:', xhr.responseText); }
     });
 }
 
-// Change password
 function changePassword(id, type, fullName) {
     $('#changePasswordId').val(id);
     $('#changePasswordType').val(type);
     $('#changePasswordUser').text(fullName);
     $('#changePasswordForm')[0].reset();
-    
-    const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
 }
 
-// Submit change password
 function submitChangePassword() {
     const id = $('#changePasswordId').val();
     const type = $('#changePasswordType').val();
     const newPassword = $('#newPassword').val();
     const confirmPassword = $('#confirmNewPassword').val();
-    
-    if (newPassword !== confirmPassword) {
-        alert('Passwords do not match!');
-        return;
-    }
-    
-    if (newPassword.length < 8) {
-        alert('Password must be at least 8 characters long!');
-        return;
-    }
-    
+
+    if (newPassword !== confirmPassword) { alert('Passwords do not match!'); return; }
+    if (newPassword.length < 8) { alert('Password must be at least 8 characters long!'); return; }
+
     $.ajax({
         url: 'change-password.php',
         method: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify({ id: id, type: type, password: newPassword }),
+        data: JSON.stringify({ id, type, password: newPassword }),
         dataType: 'json',
         success: function(data) {
             if (data.success) {
-                alert('Password changed successfully!');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-                modal.hide();
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
                 $('#changePasswordForm')[0].reset();
+                showToast('success', 'Password Changed', 'Password has been changed successfully.');
             } else {
                 alert('Failed to change password: ' + data.message);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error:', xhr.responseText, error);
-            alert('Failed to change password. Check console for details.');
-        }
+        error: function(xhr) { console.error('Error:', xhr.responseText); }
     });
 }
 
-// Delete account
 function deleteAccount(id, type, fullName) {
     currentDeleteId = id;
     currentDeleteType = type;
     currentDeleteFullName = fullName;
     $('#deleteAccountName').text(fullName);
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('deleteAccountModal')).show();
 }
 
-// Perform delete account
 function performDeleteAccount(id, type, fullName) {
-    // Show loading state
     const confirmBtn = $('#confirmDeleteBtn');
     const originalHtml = confirmBtn.html();
     confirmBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Deleting...');
-    
+
     $.ajax({
         url: 'delete-account.php',
         method: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify({ id: id, type: type }),
+        data: JSON.stringify({ id, type }),
         dataType: 'json',
         success: function(data) {
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
-            modal.hide();
-            
-            // Reset button
+            bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal')).hide();
             confirmBtn.prop('disabled', false).html(originalHtml);
-            
             if (data.success) {
-                // Show success message
                 showToast('success', 'Account Deleted', `${fullName}'s account has been deleted successfully.`);
-                
-                // Reload table and stats
                 accountsTable.ajax.reload();
                 updateStatistics();
-                
-                // Reset delete variables
-                currentDeleteId = null;
-                currentDeleteType = null;
-                currentDeleteFullName = null;
+                currentDeleteId = null; currentDeleteType = null; currentDeleteFullName = null;
             } else {
                 showToast('error', 'Delete Failed', data.message);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error:', xhr.responseText, error);
-            
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
-            modal.hide();
-            
-            // Reset button
+        error: function(xhr) {
+            bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal')).hide();
             confirmBtn.prop('disabled', false).html(originalHtml);
-            
-            showToast('error', 'Delete Failed', 'Failed to delete account. Check console for details.');
+            showToast('error', 'Delete Failed', 'An error occurred. Check console for details.');
         }
     });
 }
 
-// Simple toast notification function
-function showToast(type, title, message) {
-    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
-    const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
-    
-    const toast = `
-        <div class="toast align-items-center text-white ${bgColor} border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-${icon} me-2"></i>
-                    <strong>${title}:</strong> ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    `;
-    
-    $('body').append(toast);
-    const toastElement = $('.toast').last()[0];
-    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
-    bsToast.show();
-    
-    // Remove from DOM after hidden
-    $(toastElement).on('hidden.bs.toast', function() {
-        $(this).remove();
+function showAssignCourseBatchModal() {
+    const selected = $('.account-checkbox:checked');
+    if (selected.length === 0) { alert('Please select at least one student.'); return; }
+
+    let hasNonStudent = false;
+    selected.each(function() { if ($(this).data('type') === 'admin') { hasNonStudent = true; return false; } });
+    if (hasNonStudent) { alert('You can only assign courses to student accounts.'); return; }
+
+    updateSelectedStudentsList();
+    $('#assignCourseBatchForm')[0].reset();
+    $('#assignCourse').prop('disabled', true).html('<option value="">Select School First</option>');
+    $('#assignBatch').prop('disabled', true).html('<option value="">Select Course First</option>');
+    new bootstrap.Modal(document.getElementById('assignCourseBatchModal')).show();
+}
+
+function updateSelectedStudentsList() {
+    const selected = $('.account-checkbox:checked');
+    const listContainer = $('#selectedStudentsList');
+
+    if (selected.length === 0) {
+        listContainer.html('<p class="text-muted mb-0 text-center">No students selected</p>');
+        return;
+    }
+
+    let html = '<div class="d-flex flex-wrap gap-2">';
+    selected.each(function() {
+        const name = $(this).closest('tr').find('td:eq(2) .fw-semibold').text();
+        html += `<span class="badge bg-primary py-2 px-3"><i class="bi bi-person-fill me-1"></i>${escapeHtml(name)}</span>`;
+    });
+    html += `</div><p class="text-muted small mt-2 mb-0"><strong>${selected.length}</strong> student(s) selected</p>`;
+    listContainer.html(html);
+}
+
+function submitAssignCourseBatch() {
+    const school = $('#assignSchool').val();
+    const courseId = $('#assignCourse').val();
+    const batchId = $('#assignBatch').val();
+
+    if (!school || !courseId || !batchId) { alert('Please fill in all required fields!'); return; }
+
+    const selectedStudents = [];
+    $('.account-checkbox:checked').each(function() {
+        if ($(this).data('type') === 'student') selectedStudents.push($(this).val());
+    });
+
+    if (selectedStudents.length === 0) { alert('No students selected!'); return; }
+
+    const submitBtn = $('button[onclick="submitAssignCourseBatch()"]');
+    const originalHtml = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Assigning...');
+
+    $.ajax({
+        url: 'assign-course-batch.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ students: selectedStudents, school, courseId, batchId }),
+        dataType: 'json',
+        success: function(data) {
+            submitBtn.prop('disabled', false).html(originalHtml);
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('assignCourseBatchModal')).hide();
+                showToast('success', 'Assignment Successful', `${data.assigned} student(s) assigned successfully.`);
+                accountsTable.ajax.reload();
+                $('.account-checkbox').prop('checked', false);
+                $('#selectAll').prop('checked', false);
+                updateBulkActions();
+            } else {
+                showToast('error', 'Assignment Failed', data.message);
+            }
+        },
+        error: function(xhr) {
+            submitBtn.prop('disabled', false).html(originalHtml);
+            showToast('error', 'Assignment Failed', 'An error occurred.');
+        }
     });
 }
 
-// Helper functions
+function updateBulkActions() {
+    const count = $('.account-checkbox:checked').length;
+    if (count > 0) { $('#bulkActionsBar').fadeIn(); $('#selectedCount').text(count); }
+    else { $('#bulkActionsBar').fadeOut(); }
+}
+
+function showToast(type, title, message) {
+    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+    const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
+    const toast = `
+        <div class="toast align-items-center text-white ${bgColor} border-0" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+            <div class="d-flex">
+                <div class="toast-body"><i class="bi bi-${icon} me-2"></i><strong>${title}:</strong> ${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+    $('body').append(toast);
+    const el = $('.toast').last()[0];
+    const bsToast = new bootstrap.Toast(el, { delay: 3000 });
+    bsToast.show();
+    $(el).on('hidden.bs.toast', function() { $(this).remove(); });
+}
+
 function getStatusBadge(status) {
     const badges = {
         'Active': '<span class="badge bg-success">Active</span>',
@@ -1013,23 +1153,13 @@ function getStatusBadge(status) {
 function formatDateTime(dateStr) {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function escapeHtml(text) {
@@ -1037,9 +1167,10 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+function exportAccounts() {
+    alert('Export functionality coming soon!');
+}
 </script>
 
-<?php
-    // Include footer
-    include('../footer/footer.php');
-    ?>
+<?php include('../footer/footer.php'); ?>

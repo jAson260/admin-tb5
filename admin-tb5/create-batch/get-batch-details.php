@@ -1,22 +1,33 @@
 <?php
-// filepath: c:\laragon\www\admin-tb5\admin-tb5\create-batch\get-batch-details.php
+
 session_start();
 require_once('../../db-connect.php');
 
 header('Content-Type: application/json');
 
-$batchId = $_GET['batch_id'] ?? 0;
+// Accept both 'id' and 'batch_id' for compatibility
+$batchId = $_GET['id'] ?? $_GET['batch_id'] ?? 0;
 
 try {
     $stmt = $pdo->prepare("
         SELECT 
-            b.*,
-            c.CourseName,
-            c.CourseCode,
-            c.Duration,
-            c.DurationHours
+            b.Id,
+            b.BatchCode,
+            b.BatchName,
+            b.School,
+            b.CourseId,
+            b.StartDate,
+            b.EndDate,
+            b.Status,
+            b.Description,
+            b.CurrentStudents,
+            b.MaxStudents,
+            courses.CourseName,
+            courses.CourseCode,
+            courses.Duration,
+            courses.DurationHours
         FROM batches b
-        LEFT JOIN courses c ON b.CourseId = c.Id
+        LEFT JOIN courses ON b.CourseId = courses.Id
         WHERE b.Id = ?
     ");
     
@@ -36,7 +47,6 @@ try {
     }
     
 } catch (PDOException $e) {
-    error_log('Get Batch Details Error: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error'

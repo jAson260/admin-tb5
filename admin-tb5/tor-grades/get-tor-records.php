@@ -1,5 +1,5 @@
 <?php
-// filepath: c:\laragon\www\admin-tb5\admin-tb5\tor-grades\get-tor-records.php
+
 session_start();
 require_once('../../db-connect.php');
 

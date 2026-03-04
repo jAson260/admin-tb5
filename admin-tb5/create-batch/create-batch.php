@@ -95,16 +95,16 @@ include('../sidebar/sidebar.php');
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold small">Search Batch</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" placeholder="Batch name or ID..." id="searchBatch">
+                            <input type="text" class="form-control" placeholder="Batch name or ID..." id="searchBatch" onkeyup="applyFilters()">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Filter by School</label>
-                        <select class="form-select" id="filterSchool">
+                        <select class="form-select" id="filterSchool" onchange="applyFilters()">
                             <option value="">All Schools</option>
                             <option value="tb5">TB5</option>
                             <option value="bbi">BBI</option>
@@ -112,17 +112,17 @@ include('../sidebar/sidebar.php');
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Filter by Status</label>
-                        <select class="form-select" id="filterStatus">
+                        <select class="form-select" id="filterStatus" onchange="applyFilters()">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="completed">Completed</option>
                             <option value="pending">Pending</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold small">&nbsp;</label>
-                        <button class="btn btn-primary w-100" onclick="applyFilters()">
-                            <i class="bi bi-funnel me-1"></i>Apply
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
                         </button>
                     </div>
                 </div>
@@ -134,9 +134,9 @@ include('../sidebar/sidebar.php');
             <div class="card-header bg-white border-0 py-3">
                 <h5 class="mb-0 fw-bold">All Batches</h5>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+            <div class="card-body p-0">
+                <div class="table-responsive p-3">
+                    <table class="table table-hover align-middle" id="batchesTable" style="width:100%">
                         <thead class="table-light">
                             <tr>
                                 <th>Batch ID</th>
@@ -151,81 +151,7 @@ include('../sidebar/sidebar.php');
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><span class="badge bg-secondary">BATCH-2024-001</span></td>
-                                <td><strong>CSS Batch January 2024</strong></td>
-                                <td><span class="badge bg-info">TB5</span></td>
-                                <td>CSS - Caregiving</td>
-                                <td>
-                                    <span class="badge bg-primary">25 Students</span>
-                                </td>
-                                <td>Jan 15, 2024</td>
-                                <td>Mar 15, 2024</td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="viewBatch(1)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" onclick="editBatch(1)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteBatch(1)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span class="badge bg-secondary">BATCH-2024-002</span></td>
-                                <td><strong>BPP February Batch</strong></td>
-                                <td><span class="badge bg-info">TB5</span></td>
-                                <td>BPP - Bread & Pastry</td>
-                                <td>
-                                    <span class="badge bg-primary">18 Students</span>
-                                </td>
-                                <td>Feb 01, 2024</td>
-                                <td>Apr 01, 2024</td>
-                                <td><span class="badge bg-success">Active</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="viewBatch(2)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" onclick="editBatch(2)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteBatch(2)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span class="badge bg-secondary">BATCH-2023-045</span></td>
-                                <td><strong>COK December 2023</strong></td>
-                                <td><span class="badge bg-warning">BBI</span></td>
-                                <td>COK - Commercial Cooking</td>
-                                <td>
-                                    <span class="badge bg-primary">30 Students</span>
-                                </td>
-                                <td>Dec 01, 2023</td>
-                                <td>Feb 01, 2024</td>
-                                <td><span class="badge bg-secondary">Completed</span></td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="viewBatch(3)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-outline-success" onclick="editBatch(3)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteBatch(3)">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- DataTables will populate this -->
                         </tbody>
                     </table>
                 </div>
@@ -349,23 +275,132 @@ include('../sidebar/sidebar.php');
 </div>
 
 <script>
-// Course options for each school
-const courseOptions = {
-    tb5: [
-        { value: 'css', text: 'CSS - Caregiving' },
-        { value: 'bpp', text: 'BPP - Bread & Pastry Production' },
-        { value: 'hsk', text: 'HSK - Housekeeping' },
-        { value: 'epas', text: 'EPAS - Events Planning and Services' },
-        { value: 'tmi', text: 'TMI - Technical Maintenance Installation' }
-    ],
-    bbi: [
-        { value: 'cok', text: 'COK - Commercial Cooking' },
-        { value: 'hsk', text: 'HSK - Housekeeping' },
-        { value: 'eim', text: 'EIM - Electrical Installation & Maintenance' },
-        { value: 'fbs', text: 'FBS - Food & Beverage Services' },
-        { value: 'evm', text: 'EVM - Events Management' }
-    ]
-};
+let batchesTable;
+
+$(document).ready(function() {
+    // Initialize DataTable
+    batchesTable = $('#batchesTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: 'get-batches.php',
+            type: 'POST',
+            data: function(d) {
+                // Add custom filter parameters
+                d.schoolFilter = $('#filterSchool').val();
+                d.statusFilter = $('#filterStatus').val();
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable Error:', error, thrown);
+            }
+        },
+        columns: [
+            { 
+                data: 'BatchCode',
+                render: function(data) {
+                    return `<span class="badge bg-secondary">${data}</span>`;
+                }
+            },
+            { 
+                data: 'BatchName',
+                render: function(data) {
+                    return `<strong>${data}</strong>`;
+                }
+            },
+            { 
+                data: 'School',
+                render: function(data) {
+                    const badgeClass = data === 'TB5' ? 'bg-info' : 'bg-warning';
+                    return `<span class="badge ${badgeClass}">${data}</span>`;
+                }
+            },
+            { 
+                data: null,
+                render: function(data, type, row) {
+                    return `${row.CourseCode || ''} - ${row.CourseName || ''}`;
+                }
+            },
+            { 
+                data: 'CurrentStudents',
+                render: function(data) {
+                    return `<span class="badge bg-primary">${data || 0} Students</span>`;
+                }
+            },
+            { 
+                data: 'StartDate',
+                render: function(data) {
+                    return formatDate(data);
+                }
+            },
+            { 
+                data: 'EndDate',
+                render: function(data) {
+                    return formatDate(data);
+                }
+            },
+            { 
+                data: 'Status',
+                render: function(data) {
+                    const badgeClass = data === 'Active' ? 'bg-success' : 'bg-secondary';
+                    return `<span class="badge ${badgeClass}">${data}</span>`;
+                }
+            },
+            { 
+                data: null,
+                orderable: false,
+                render: function(data, type, row) {
+                    return `
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="viewBatch(${row.Id})" title="View">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success" onclick="editBatch(${row.Id})" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteBatch(${row.Id})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        order: [[0, 'desc']],
+        responsive: true,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6">>rtip',
+        language: {
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ batches",
+            infoEmpty: "No batches found",
+            infoFiltered: "(filtered from _MAX_ total batches)",
+            zeroRecords: "No matching batches found",
+            emptyTable: "No batches available",
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
+        },
+        drawCallback: function(settings) {
+            updateStats();
+        }
+    });
+
+    // Custom search - use DataTable's built-in search
+    let searchTimeout;
+    $('#searchBatch').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            batchesTable.search($('#searchBatch').val()).draw();
+        }, 500);
+    });
+
+    // Filter change events
+    $('#filterSchool, #filterStatus').on('change', function() {
+        batchesTable.ajax.reload();
+    });
+    
+    // Initial stats load
+    updateStats();
+});
 
 // Show create batch modal
 function showCreateBatchModal() {
@@ -380,7 +415,6 @@ function loadCourses() {
     const school = document.getElementById('batchSchool').value;
     const courseDropdown = document.getElementById('batchCourse');
     
-    // Reset dropdown
     courseDropdown.innerHTML = '<option value="">Loading courses...</option>';
     courseDropdown.disabled = true;
     
@@ -389,7 +423,6 @@ function loadCourses() {
         return;
     }
     
-    // Fetch courses from database
     fetch(`get-courses-by-school.php?school=${school}`)
         .then(response => response.json())
         .then(data => {
@@ -401,9 +434,6 @@ function loadCourses() {
                     const option = document.createElement('option');
                     option.value = course.Id;
                     option.textContent = `${course.CourseCode} - ${course.CourseName}`;
-                    option.dataset.courseName = course.CourseName;
-                    option.dataset.duration = course.Duration || '';
-                    option.dataset.maxStudents = course.MaxStudents || '30';
                     courseDropdown.appendChild(option);
                 });
             } else {
@@ -411,7 +441,6 @@ function loadCourses() {
             }
         })
         .catch(error => {
-            console.error('Error loading courses:', error);
             courseDropdown.innerHTML = '<option value="">Error loading courses</option>';
         });
 }
@@ -426,58 +455,65 @@ function generateBatchId() {
 }
 
 // Save batch
-let nextRowId = 1;
-
-function initializeRows() {
-    const tbody = document.querySelector('.table tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    rows.forEach((tr, idx) => {
-        const rowId = idx + 1;
-        tr.dataset.rowId = rowId;
-        const cells = tr.querySelectorAll('td');
-        tr.dataset.batchId = cells[0].textContent.trim();
-        tr.dataset.batchName = cells[1].textContent.trim();
-        tr.dataset.school = cells[2].textContent.trim();
-        tr.dataset.course = cells[3].textContent.trim();
-        const studentsText = cells[4].textContent.trim();
-        const studentsNum = parseInt(studentsText, 10) || 0;
-        tr.dataset.students = studentsNum;
-        tr.dataset.startDate = cells[5].textContent.trim();
-        tr.dataset.endDate = cells[6].textContent.trim();
-        tr.dataset.status = cells[7].textContent.trim();
-        nextRowId = Math.max(nextRowId, rowId + 1);
-    });
-    updateStats();
-}
-
 function saveBatch() {
     const form = document.getElementById('createBatchForm');
-    if (!form.checkValidity()) { 
-        form.reportValidity(); 
-        return; 
+    const batchName = document.getElementById('batchName').value.trim();
+    const batchSchool = document.getElementById('batchSchool').value;
+    const batchCourse = document.getElementById('batchCourse').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    let hasError = false;
+    
+    if (!batchName) {
+        document.getElementById('batchName').classList.add('is-invalid');
+        hasError = true;
+    }
+    if (!batchSchool) {
+        document.getElementById('batchSchool').classList.add('is-invalid');
+        hasError = true;
+    }
+    if (!batchCourse) {
+        document.getElementById('batchCourse').classList.add('is-invalid');
+        hasError = true;
+    }
+    if (!startDate) {
+        document.getElementById('startDate').classList.add('is-invalid');
+        hasError = true;
+    }
+    if (!endDate) {
+        document.getElementById('endDate').classList.add('is-invalid');
+        hasError = true;
+    }
+    
+    if (hasError) {
+        alert('Please fill in all required fields!');
+        return;
     }
 
     const editingId = document.getElementById('editingBatchRowId').value;
     const batchId = document.getElementById('batchId').value || generateBatchId();
-    
-    // Get course info
     const courseSelect = document.getElementById('batchCourse');
     const selectedCourseOption = courseSelect.options[courseSelect.selectedIndex];
-    const courseId = courseSelect.value;
-    const courseName = selectedCourseOption.dataset.courseName || selectedCourseOption.textContent;
+    const courseText = selectedCourseOption.textContent;
+    const courseCode = courseText.split(' - ')[0].trim();
+    const courseName = courseText.split(' - ')[1]?.trim() || courseText;
     
     const batchData = {
         batchId: batchId,
-        batchName: document.getElementById('batchName').value,
-        school: document.getElementById('batchSchool').value.toUpperCase(),
-        courseId: courseId,
+        batchName: batchName,
+        school: batchSchool.toUpperCase(),
+        courseId: batchCourse,
+        courseCode: courseCode,
         courseName: courseName,
-        startDate: document.getElementById('startDate').value,
-        endDate: document.getElementById('endDate').value,
-        description: document.getElementById('batchDescription').value
+        startDate: startDate,
+        endDate: endDate,
+        description: document.getElementById('batchDescription').value,
+        editingId: editingId
     };
 
-    // Send to backend to save in database
     fetch('save-batch.php', {
         method: 'POST',
         headers: {
@@ -488,154 +524,107 @@ function saveBatch() {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            const tbody = document.querySelector('.table tbody');
-
-            if (editingId) {
-                // Update existing row
-                const tr = tbody.querySelector(`tr[data-row-id="${editingId}"]`);
-                if (tr) {
-                    const cells = tr.querySelectorAll('td');
-                    cells[0].innerHTML = `<span class="badge bg-secondary">${batchData.batchId}</span>`;
-                    cells[1].innerHTML = `<strong>${batchData.batchName}</strong>`;
-                    cells[2].innerHTML = `<span class="badge bg-info">${batchData.school}</span>`;
-                    cells[3].textContent = batchData.courseName;
-                    cells[4].innerHTML = `<span class="badge bg-primary">0 Students</span>`;
-                    cells[5].textContent = batchData.startDate;
-                    cells[6].textContent = batchData.endDate;
-                    cells[7].innerHTML = `<span class="badge bg-success">Active</span>`;
-
-                    tr.dataset.batchId = batchData.batchId;
-                    tr.dataset.batchName = batchData.batchName;
-                    tr.dataset.school = batchData.school;
-                    tr.dataset.courseId = batchData.courseId;
-                    tr.dataset.course = batchData.courseName;
-                    tr.dataset.students = 0;
-                    tr.dataset.startDate = batchData.startDate;
-                    tr.dataset.endDate = batchData.endDate;
-                    tr.dataset.status = 'Active';
-                }
-            } else {
-                // Create new row
-                const rowId = result.batchId || nextRowId++;
-                const tr = document.createElement('tr');
-                tr.dataset.rowId = rowId;
-                tr.dataset.batchId = batchData.batchId;
-                tr.dataset.batchName = batchData.batchName;
-                tr.dataset.school = batchData.school;
-                tr.dataset.courseId = batchData.courseId;
-                tr.dataset.course = batchData.courseName;
-                tr.dataset.startDate = batchData.startDate;
-                tr.dataset.endDate = batchData.endDate;
-                tr.dataset.status = 'Active';
-                tr.dataset.students = 0;
-
-                tr.innerHTML = `
-                    <td><span class="badge bg-secondary">${batchData.batchId}</span></td>
-                    <td><strong>${batchData.batchName}</strong></td>
-                    <td><span class="badge bg-info">${batchData.school}</span></td>
-                    <td>${batchData.courseName}</td>
-                    <td><span class="badge bg-primary">0 Students</span></td>
-                    <td>${batchData.startDate}</td>
-                    <td>${batchData.endDate}</td>
-                    <td><span class="badge bg-success">Active</span></td>
-                    <td>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary" onclick="viewBatch(${rowId})">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button class="btn btn-outline-success" onclick="editBatch(${rowId})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="deleteBatch(${rowId})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-
-                tbody.prepend(tr);
-            }
-
             bootstrap.Modal.getInstance(document.getElementById('createBatchModal')).hide();
             resetCreateForm();
+            batchesTable.ajax.reload();
             updateStats();
-            
-            // Show success message
-            alert(result.message || 'Batch saved successfully!');
         } else {
             alert('Error: ' + (result.message || 'Failed to save batch'));
         }
     })
     .catch(error => {
-        console.error('Error saving batch:', error);
         alert('Error saving batch. Please try again.');
     });
 }
 
-// View batch details
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
 function viewBatch(batchId) {
-    const tr = document.querySelector(`.table tbody tr[data-row-id="${batchId}"]`);
-    if (!tr) { alert('Batch not found'); return; }
-    const content = `
-        <p><strong>Batch ID:</strong> ${tr.dataset.batchId}</p>
-        <p><strong>Batch Name:</strong> ${tr.dataset.batchName}</p>
-        <p><strong>School:</strong> ${tr.dataset.school}</p>
-        <p><strong>Course:</strong> ${tr.dataset.course}</p>
-        <p><strong>Start Date:</strong> ${tr.dataset.startDate}</p>
-        <p><strong>End Date:</strong> ${tr.dataset.endDate}</p>
-        <p><strong>Status:</strong> ${tr.dataset.status}</p>
-    `;
-    document.getElementById('viewBatchContent').innerHTML = content;
-    const modal = new bootstrap.Modal(document.getElementById('viewBatchModal'));
-    modal.show();
+    $.ajax({
+        url: 'get-batch-details.php',
+        method: 'GET',
+        data: { id: batchId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const batch = response.batch;
+                const content = `
+                    <p><strong>Batch ID:</strong> ${batch.BatchCode}</p>
+                    <p><strong>Batch Name:</strong> ${batch.BatchName}</p>
+                    <p><strong>School:</strong> ${batch.School}</p>
+                    <p><strong>Course:</strong> ${batch.CourseCode} - ${batch.CourseName}</p>
+                    <p><strong>Start Date:</strong> ${formatDate(batch.StartDate)}</p>
+                    <p><strong>End Date:</strong> ${formatDate(batch.EndDate)}</p>
+                    <p><strong>Status:</strong> ${batch.Status}</p>
+                    <p><strong>Students:</strong> ${batch.CurrentStudents}/${batch.MaxStudents}</p>
+                `;
+                document.getElementById('viewBatchContent').innerHTML = content;
+                const modal = new bootstrap.Modal(document.getElementById('viewBatchModal'));
+                modal.show();
+            }
+        }
+    });
 }
 
-// Edit batch
 function editBatch(batchId) {
-    const tr = document.querySelector(`.table tbody tr[data-row-id="${batchId}"]`);
-    if (!tr) { alert('Batch not found'); return; }
-    // populate form
-    document.getElementById('editingBatchRowId').value = batchId;
-    document.getElementById('batchId').value = tr.dataset.batchId || '';
-    document.getElementById('batchName').value = tr.dataset.batchName || '';
-    document.getElementById('batchSchool').value = tr.dataset.school.toLowerCase() || '';
-    loadCourses();
-    setTimeout(() => {
-        document.getElementById('batchCourse').value = tr.dataset.course || '';
-    }, 50);
-    document.getElementById('startDate').value = tr.dataset.startDate || '';
-    document.getElementById('endDate').value = tr.dataset.endDate || '';
-    document.getElementById('batchDescription').value = tr.dataset.description || '';
-    document.getElementById('saveBatchBtn').innerHTML = '<i class="bi bi-check-circle me-1"></i>Update Batch';
-    const modal = new bootstrap.Modal(document.getElementById('createBatchModal'));
-    modal.show();
+    $.ajax({
+        url: 'get-batch-details.php',
+        method: 'GET',
+        data: { id: batchId },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const batch = response.batch;
+                document.getElementById('editingBatchRowId').value = batchId;
+                document.getElementById('batchId').value = batch.BatchCode;
+                document.getElementById('batchName').value = batch.BatchName;
+                document.getElementById('batchSchool').value = batch.School.toLowerCase();
+                loadCourses();
+                setTimeout(() => {
+                    document.getElementById('batchCourse').value = batch.CourseId;
+                }, 300);
+                document.getElementById('startDate').value = batch.StartDate;
+                document.getElementById('endDate').value = batch.EndDate;
+                document.getElementById('batchDescription').value = batch.Description || '';
+                document.getElementById('saveBatchBtn').innerHTML = '<i class="bi bi-check-circle me-1"></i>Update Batch';
+                const modal = new bootstrap.Modal(document.getElementById('createBatchModal'));
+                modal.show();
+            }
+        }
+    });
 }
 
-// Delete batch
 function deleteBatch(batchId) {
     if (!confirm('Are you sure you want to delete this batch?')) return;
-    const tr = document.querySelector(`.table tbody tr[data-row-id="${batchId}"]`);
-    if (tr) tr.remove();
-    updateStats();
+    
+    $.ajax({
+        url: 'delete-batch.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ batch_id: batchId }),
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                batchesTable.ajax.reload();
+                updateStats();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        }
+    });
 }
 
-// Apply filters
-function applyFilters() {
-    const search = document.getElementById('searchBatch').value.toLowerCase();
-    const school = document.getElementById('filterSchool').value.toLowerCase();
-    const status = document.getElementById('filterStatus').value.toLowerCase();
-    const rows = document.querySelectorAll('.table tbody tr');
-    rows.forEach(tr => {
-        const name = (tr.dataset.batchName || '').toLowerCase();
-        const rowSchool = (tr.dataset.school || '').toLowerCase();
-        const rowStatus = (tr.dataset.status || '').toLowerCase();
-        const matchesSearch = !search || name.includes(search) || (tr.dataset.batchId || '').toLowerCase().includes(search);
-        const matchesSchool = !school || rowSchool.includes(school);
-        const matchesStatus = !status || rowStatus.includes(status);
-        tr.style.display = (matchesSearch && matchesSchool && matchesStatus) ? '' : 'none';
-    });
-    // Optionally update visible stats when filters are applied
-    updateStats();
+function resetFilters() {
+    document.getElementById('searchBatch').value = '';
+    document.getElementById('filterSchool').value = '';
+    document.getElementById('filterStatus').value = '';
+    batchesTable.search('').draw();
+    batchesTable.ajax.reload();
 }
 
 function resetCreateForm() {
@@ -645,33 +634,28 @@ function resetCreateForm() {
     document.getElementById('editingBatchRowId').value = '';
 }
 
-// Initialize on load
-document.addEventListener('DOMContentLoaded', () => {
-    initializeRows();
-});
-
-// Update the stats cards from table data
 function updateStats() {
-    const rows = Array.from(document.querySelectorAll('.table tbody tr'));
-    // count only visible rows
-    const visibleRows = rows.filter(r => r.style.display !== 'none');
-    const total = visibleRows.length;
-    let active = 0, completed = 0, students = 0;
-    visibleRows.forEach(r => {
-        const status = (r.dataset.status || '').toLowerCase();
-        if (status.includes('active')) active++;
-        if (status.includes('completed')) completed++;
-        const s = parseInt(r.dataset.students, 10) || 0;
-        students += s;
+    $.ajax({
+        url: 'get-batch-statistics.php',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.success && data.statistics) {
+                $('#totalBatchesCount').text(data.statistics.total || 0);
+                $('#activeBatchesCount').text(data.statistics.active || 0);
+                $('#totalStudentsCount').text(data.statistics.students || 0);
+                $('#completedBatchesCount').text(data.statistics.completed || 0);
+            }
+        }
     });
-
-    document.getElementById('totalBatchesCount').textContent = total;
-    document.getElementById('activeBatchesCount').textContent = active;
-    document.getElementById('completedBatchesCount').textContent = completed;
-    document.getElementById('totalStudentsCount').textContent = students;
 }
 </script>
-</script>
+
+<style>
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+</style>
 
 <?php
 // Include footer

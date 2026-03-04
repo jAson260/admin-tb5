@@ -117,25 +117,25 @@ try {
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-8">
+                    <div class="col-md-5">
                         <label class="form-label fw-semibold small">Search Course</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" placeholder="Course name or code..." id="searchCourse">
+                            <input type="text" class="form-control" placeholder="Course name or code..." id="searchCourse" onkeyup="loadCourses()">
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold small">Status</label>
-                        <select class="form-select" id="filterStatus">
-                            <option value="">All</option>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Filter by Status</label>
+                        <select class="form-select" id="filterStatus" onchange="loadCourses()">
+                            <option value="">All Status</option>
                             <option value="1">Active</option>
                             <option value="0">Inactive</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold small">&nbsp;</label>
-                        <button class="btn btn-primary w-100" onclick="loadCourses()">
-                            <i class="bi bi-funnel me-1"></i>Apply
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
                         </button>
                     </div>
                 </div>
@@ -176,7 +176,7 @@ try {
                                         <th>Course Name</th>
                                         <th>School</th>
                                         <th>Category</th>
-                                        <th>Duration</th>
+                                        <th>Total Hours</th>
                                         <th>Tuition</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -208,7 +208,7 @@ try {
                                         <th>Course Code</th>
                                         <th>Course Name</th>
                                         <th>Category</th>
-                                        <th>Duration</th>
+                                        <th>Total Hours</th>
                                         <th>Tuition</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -236,7 +236,7 @@ try {
                                         <th>Course Code</th>
                                         <th>Course Name</th>
                                         <th>Category</th>
-                                        <th>Duration</th>
+                                        <th>Total Hours</th>
                                         <th>Tuition</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -323,15 +323,17 @@ try {
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Duration <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="courseDuration" placeholder="e.g., 3 Months" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Total Hours</label>
-                                    <input type="number" class="form-control" id="durationHours" placeholder="e.g., 216">
-                                </div>
-                            </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Total Hours <span class="text-danger">*</span></label>
+        <input type="number" class="form-control" id="courseDuration" placeholder="e.g., 216" required oninput="calculateTotalDays()">
+        <div class="form-text">Enter total training hours</div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Total Days</label>
+        <input type="number" class="form-control" id="durationHours" placeholder="Auto-calculated" readonly>
+        <div class="form-text">Calculated at 8 hours/day</div>
+    </div>
+</div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Tuition Fee (₱)</label>
@@ -429,6 +431,22 @@ $(document).ready(function() {
 // Set tab filter
 function setTabFilter(school) {
     currentTabFilter = school;
+    loadCourses();
+}
+
+// Reset all filters
+function resetFilters() {
+    // Clear search input
+    $('#searchCourse').val('');
+    
+    // Reset status filter
+    $('#filterStatus').val('');
+    
+    // Reset tab to "All Courses"
+    currentTabFilter = '';
+    $('#all-courses-tab').tab('show');
+    
+    // Reload courses
     loadCourses();
 }
 

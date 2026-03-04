@@ -1,81 +1,114 @@
 <?php
 // filepath: c:\laragon\www\admin-tb5\admin-tb5\create-batch\get-batches.php
 session_start();
+require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
 
 header('Content-Type: application/json');
 
-$draw = isset($_POST['draw']) ? intval($_POST['draw']) : 1;
-$start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-$length = isset($_POST['length']) ? intval($_POST['length']) : 10;
-$searchValue = isset($_POST['search']['value']) ? $_POST['search']['value'] : '';
-$schoolFilter = isset($_POST['school']) ? $_POST['school'] : '';
-$statusFilter = isset($_POST['status']) ? $_POST['status'] : '';
-
 try {
-    // Build WHERE clause
-    $whereClause = "WHERE 1=1";
+    $draw = intval($_POST['draw'] ?? 1);
+    $start = intval($_POST['start'] ?? 0);
+    $length = intval($_POST['length'] ?? 10);
+    $searchValue = $_POST['search']['value'] ?? '';
+    $orderColumnIndex = intval($_POST['order'][0]['column'] ?? 0);
+    $orderDirection = $_POST['order'][0]['dir'] ?? 'desc';
+    
+    // Custom filters
+    $schoolFilter = $_POST['schoolFilter'] ?? '';
+    $statusFilter = $_POST['statusFilter'] ?? '';
+    
+    $columns = ['b.BatchCode', 'b.BatchName', 'b.School', 'courses.CourseName', 'b.CurrentStudents', 'b.StartDate', 'b.EndDate', 'b.Status'];
+    $orderColumn = $columns[$orderColumnIndex] ?? 'b.Id';
+    
+    // Base query with proper JOIN
+    $baseQuery = "
+        FROM batches b
+        LEFT JOIN courses ON b.CourseId = courses.Id
+    ";
+    
+    // WHERE conditions
+    $whereConditions = ['1=1'];
     $params = [];
     
+    // Search filter
     if (!empty($searchValue)) {
-        $whereClause .= " AND (b.BatchCode LIKE ? OR b.BatchName LIKE ? OR c.CourseName LIKE ?)";
-        $searchParam = "%{$searchValue}%";
-        $params = array_merge($params, [$searchParam, $searchParam, $searchParam]);
+        $whereConditions[] = "(
+            b.BatchCode LIKE ? OR 
+            b.BatchName LIKE ? OR 
+            b.School LIKE ? OR
+            courses.CourseName LIKE ? OR 
+            courses.CourseCode LIKE ?
+        )";
+        $searchParam = "%$searchValue%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
     }
     
+    // School filter
     if (!empty($schoolFilter)) {
-        $whereClause .= " AND b.School = ?";
+        $whereConditions[] = "b.School = ?";
         $params[] = strtoupper($schoolFilter);
     }
     
+    // Status filter
     if (!empty($statusFilter)) {
-        $whereClause .= " AND b.Status = ?";
+        $whereConditions[] = "b.Status = ?";
         $params[] = ucfirst($statusFilter);
     }
     
-    // Count total records
-    $countQuery = "SELECT COUNT(*) as total FROM batches b {$whereClause}";
-    $countStmt = $pdo->prepare($countQuery);
-    $countStmt->execute($params);
-    $totalRecords = $countStmt->fetch()['total'] ?? 0;
+    $whereClause = implode(' AND ', $whereConditions);
     
-    // Get records with pagination
-    $query = "
+    // Count total records (without filters)
+    $totalQuery = "SELECT COUNT(*) as total FROM batches b";
+    $totalStmt = $pdo->query($totalQuery);
+    $totalRecords = $totalStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Count filtered records
+    $filteredQuery = "SELECT COUNT(*) as total $baseQuery WHERE $whereClause";
+    $filteredStmt = $pdo->prepare($filteredQuery);
+    $filteredStmt->execute($params);
+    $filteredRecords = $filteredStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Fetch data
+    $dataQuery = "
         SELECT 
             b.Id,
             b.BatchCode,
             b.BatchName,
             b.School,
-            c.CourseName,
-            c.CourseCode,
+            b.CourseId,
+            b.StartDate,
+            b.EndDate,
+            b.Status,
             b.CurrentStudents,
             b.MaxStudents,
-            DATE_FORMAT(b.StartDate, '%b %d, %Y') as StartDate,
-            DATE_FORMAT(b.EndDate, '%b %d, %Y') as EndDate,
-            b.Status,
-            b.Description
-        FROM batches b
-        LEFT JOIN courses c ON b.CourseId = c.Id
-        {$whereClause}
-        ORDER BY b.Id DESC
-        LIMIT {$start}, {$length}
+            b.Description,
+            courses.CourseCode,
+            courses.CourseName
+        $baseQuery
+        WHERE $whereClause
+        ORDER BY $orderColumn $orderDirection
+        LIMIT $start, $length
     ";
     
-    $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $dataStmt = $pdo->prepare($dataQuery);
+    $dataStmt->execute($params);
+    $data = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode([
         'draw' => $draw,
-        'recordsTotal' => (int)$totalRecords,
-        'recordsFiltered' => (int)$totalRecords,
-        'data' => $records
+        'recordsTotal' => $totalRecords,
+        'recordsFiltered' => $filteredRecords,
+        'data' => $data
     ]);
     
-} catch (PDOException $e) {
-    error_log('Get Batches Error: ' . $e->getMessage());
+} catch (Exception $e) {
     echo json_encode([
-        'draw' => $draw,
+        'draw' => 1,
         'recordsTotal' => 0,
         'recordsFiltered' => 0,
         'data' => [],

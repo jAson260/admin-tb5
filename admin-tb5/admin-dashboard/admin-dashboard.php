@@ -1,10 +1,92 @@
 <?php
 session_start();
 require_once('../../includes/rbac-guard.php');
+require_once('../../db-connect.php');
+
+// Fetch dashboard statistics
+try {
+    // Total Courses
+    $coursesStmt = $pdo->query("SELECT COUNT(*) as total FROM courses WHERE IsActive = 1");
+    $totalCourses = $coursesStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Active Batches
+    $batchesStmt = $pdo->query("SELECT COUNT(*) as total FROM batches WHERE Status = 'Active'");
+    $activeBatches = $batchesStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Pending Document Approvals
+    $pendingStmt = $pdo->query("
+        SELECT COUNT(DISTINCT StudentId) as total 
+        FROM documents 
+        WHERE TORStatus = 'pending' 
+           OR DiplomaStatus = 'pending' 
+           OR Form137Status = 'pending' 
+           OR PSAStatus = 'pending'
+           OR MarriageCertificateStatus = 'pending'
+           OR ALSCertificateStatus = 'pending'
+           OR BarangayIndigencyStatus = 'pending'
+           OR CertificateOfResidencyStatus = 'pending'
+    ");
+    $pendingApprovals = $pendingStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Total Students (Approved accounts)
+    $studentsStmt = $pdo->query("SELECT COUNT(*) as total FROM studentinfos WHERE Status = 'Approved'");
+    $totalStudents = $studentsStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    
+    // Fetch pending documents for table
+    $documentsStmt = $pdo->query("
+        SELECT 
+            s.Id,
+            CONCAT(s.FirstName, ' ', s.LastName) as StudentName,
+            s.StudentId,
+            d.CreatedAt as SubmissionDate,
+            CASE 
+                WHEN d.PSAStatus = 'pending' THEN 'PSA Birth Certificate'
+                WHEN d.TORStatus = 'pending' THEN 'Transcript of Records'
+                WHEN d.DiplomaStatus = 'pending' THEN 'Diploma'
+                WHEN d.Form137Status = 'pending' THEN 'Form 137'
+                WHEN d.MarriageCertificateStatus = 'pending' THEN 'Marriage Certificate'
+                WHEN d.ALSCertificateStatus = 'pending' THEN 'ALS Certificate'
+                WHEN d.BarangayIndigencyStatus = 'pending' THEN 'Barangay Indigency'
+                WHEN d.CertificateOfResidencyStatus = 'pending' THEN 'Certificate of Residency'
+            END as DocumentType
+        FROM documents d
+        INNER JOIN studentinfos s ON d.StudentId = s.Id
+        WHERE d.PSAStatus = 'pending' 
+           OR d.TORStatus = 'pending' 
+           OR d.DiplomaStatus = 'pending' 
+           OR d.Form137Status = 'pending'
+           OR d.MarriageCertificateStatus = 'pending'
+           OR d.ALSCertificateStatus = 'pending'
+           OR d.BarangayIndigencyStatus = 'pending'
+           OR d.CertificateOfResidencyStatus = 'pending'
+        ORDER BY d.CreatedAt DESC
+        LIMIT 5
+    ");
+    $pendingDocuments = $documentsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch recent activity logs
+    $logsStmt = $pdo->query("
+        SELECT 
+            Action,
+            Details,
+            CreatedAt
+        FROM logs
+        ORDER BY CreatedAt DESC
+        LIMIT 4
+    ");
+    $recentLogs = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (PDOException $e) {
+    error_log('Dashboard Stats Error: ' . $e->getMessage());
+    $totalCourses = 0;
+    $activeBatches = 0;
+    $pendingApprovals = 0;
+    $totalStudents = 0;
+    $pendingDocuments = [];
+    $recentLogs = [];
+}
 
 include('../header/header.php');
-
-
 include('../sidebar/sidebar.php');
 ?>
 
@@ -48,7 +130,7 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="text-muted mb-1">Total Courses</h6>
-                                <h3 class="mb-0 fw-bold">24</h3>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format($totalCourses); ?></h3>
                             </div>
                         </div>
                     </div>
@@ -67,7 +149,7 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="text-muted mb-1">Active Batches</h6>
-                                <h3 class="mb-0 fw-bold">12</h3>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format($activeBatches); ?></h3>
                             </div>
                         </div>
                     </div>
@@ -86,7 +168,7 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="text-muted mb-1">Pending Approvals</h6>
-                                <h3 class="mb-0 fw-bold">8</h3>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format($pendingApprovals); ?></h3>
                             </div>
                         </div>
                     </div>
@@ -105,7 +187,7 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div class="flex-grow-1 ms-3">
                                 <h6 class="text-muted mb-1">Total Students</h6>
-                                <h3 class="mb-0 fw-bold">342</h3>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format($totalStudents); ?></h3>
                             </div>
                         </div>
                     </div>

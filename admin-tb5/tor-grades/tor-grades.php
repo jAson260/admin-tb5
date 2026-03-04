@@ -1,5 +1,5 @@
 <?php
-// filepath: c:\laragon\www\admin-tb5\admin-tb5\tor-grades\tor-grades.php
+
 session_start();
 require_once('../../includes/rbac-guard.php');
 checkAdmin();
@@ -133,7 +133,7 @@ include('../sidebar/sidebar.php');
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <h5 class="modal-title text-white">
-                    <i class="bi bi-file-earmark-plus me-2"></i>Generate TOR
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate TOR CSV
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -218,7 +218,7 @@ include('../sidebar/sidebar.php');
 
                     <div class="alert alert-info mt-3 mb-0">
                         <i class="bi bi-info-circle me-2"></i>
-                        <small>Please ensure all grades and information are accurate before generating the TOR.</small>
+                        <small>Please ensure all grades and information are accurate before generating the CSV file.</small>
                     </div>
                 </form>
             </div>
@@ -227,7 +227,7 @@ include('../sidebar/sidebar.php');
                     <i class="bi bi-x-circle me-1"></i>Cancel
                 </button>
                 <button type="button" class="btn btn-primary" id="submitGenerateTOR">
-                    <i class="bi bi-file-earmark-pdf me-1"></i>Generate TOR
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Generate CSV
                 </button>
             </div>
         </div>
@@ -271,10 +271,7 @@ $(document).ready(function() {
                 render: function(data) {
                     return `
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-primary" onclick="viewTOR(${data.id})" title="View">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-success" onclick="downloadTOR(${data.id})" title="Download">
+                            <button class="btn btn-sm btn-success" onclick="downloadTOR(${data.id})" title="Download CSV">
                                 <i class="bi bi-download"></i>
                             </button>
                             <button class="btn btn-sm btn-danger" onclick="deleteTOR(${data.id})" title="Delete">
@@ -323,11 +320,10 @@ $(document).ready(function() {
         }
     });
 
-    // Generate TOR submission
+    // Generate TOR submission - CSV VERSION
     $('#submitGenerateTOR').on('click', function() {
         const form = $('#generateTORForm')[0];
         
-        // Custom validation
         const studentId = $('#studentSelect').val();
         const theoreticalGrade = $('#theoreticalGrade').val();
         const practicalGrade = $('#practicalGrade').val();
@@ -358,57 +354,63 @@ $(document).ready(function() {
             remarks: $('#remarks').val()
         };
 
+        console.log('Submitting data:', formData); // Debug
+
         const submitBtn = $(this);
         const originalHtml = submitBtn.html();
-        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Generating...');
+        submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Generating CSV...');
 
+        // Use AJAX to submit and then trigger download
         $.ajax({
-            url: 'generate-tor.php',
+            url: 'generate-tor-csv.php',
             method: 'POST',
-            contentType: 'application/json',
             data: JSON.stringify(formData),
-            dataType: 'json',
-            success: function(response) {
-                submitBtn.prop('disabled', false).html(originalHtml);
-                
-                if (response.success) {
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('generateTORModal'));
-                    modal.hide();
-
-                    // Show success message
-                    const message = response.multiple 
-                        ? `TOR(s) generated successfully for ${response.count} course(s)!` 
-                        : 'TOR generated successfully!';
-                    
-                    alert(message);
-                    
-                    // Open PDF(s)
-                    if (response.pdf_urls && response.pdf_urls.length > 0) {
-                        response.pdf_urls.forEach(url => {
-                            window.open(url, '_blank');
-                        });
-                    } else if (response.pdf_url) {
-                        window.open(response.pdf_url, '_blank');
-                    }
-
-                    // Refresh table
-                    torTable.ajax.reload();
-                    loadStatistics();
-                    
-                    // Reset form
-                    form.reset();
-                } else {
-                    alert('Error: ' + response.message);
+            contentType: 'application/json',
+            xhrFields: {
+            responseType: 'blob' // Important for file download
+        },
+        success: function(blob, status, xhr) {
+            // Create a download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Get filename from Content-Disposition header or use default
+            const disposition = xhr.getResponseHeader('Content-Disposition');
+            let filename = 'TOR_' + Date.now() + '.csv';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
                 }
-            },
-            error: function(xhr, status, error) {
-                submitBtn.prop('disabled', false).html(originalHtml);
-                console.error('Generate TOR Error:', error);
-                console.error('Response:', xhr.responseText);
-                alert('Failed to generate TOR. Please check console for details.');
             }
-        });
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Re-enable button and close modal
+            submitBtn.prop('disabled', false).html(originalHtml);
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('generateTORModal'));
+            modal.hide();
+            
+            // Refresh table and stats
+            $('#torTable').DataTable().ajax.reload();
+            loadStatistics();
+            
+            // Reset form
+            form.reset();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error generating CSV:', error);
+            console.error('Response:', xhr.responseText);
+            alert('Failed to generate CSV. Check console for details.');
+            submitBtn.prop('disabled', false).html(originalHtml);
+        }
+    });
     });
 
     // Reset form when modal is closed
@@ -524,12 +526,8 @@ function loadStatistics() {
     });
 }
 
-function viewTOR(id) {
-    window.open(`view-tor.php?id=${id}`, '_blank');
-}
-
 function downloadTOR(id) {
-    window.location.href = `download-tor.php?id=${id}`;
+    window.location.href = `download-tor-csv.php?id=${id}`;
 }
 
 function deleteTOR(id) {
