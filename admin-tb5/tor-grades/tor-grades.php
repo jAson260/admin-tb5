@@ -41,7 +41,10 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div>
                                 <div class="text-muted small">Total TORs</div>
-                                <h3 class="mb-0 fw-bold" id="totalTORs">0</h3>
+                                <h3 class="mb-0 fw-bold" id="totalTORs">
+                                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                                </h3>
+                                <small class="text-muted" id="totalTORsSub">All records</small>
                             </div>
                         </div>
                     </div>
@@ -56,7 +59,10 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div>
                                 <div class="text-muted small">Competent</div>
-                                <h3 class="mb-0 fw-bold" id="competentCount">0</h3>
+                                <h3 class="mb-0 fw-bold" id="competentCount">
+                                    <span class="spinner-border spinner-border-sm text-success"></span>
+                                </h3>
+                                <small class="text-muted" id="competentSub">Passed</small>
                             </div>
                         </div>
                     </div>
@@ -71,7 +77,10 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div>
                                 <div class="text-muted small">This Month</div>
-                                <h3 class="mb-0 fw-bold" id="thisMonthCount">0</h3>
+                                <h3 class="mb-0 fw-bold" id="thisMonthCount">
+                                    <span class="spinner-border spinner-border-sm text-info"></span>
+                                </h3>
+                                <small class="text-muted" id="thisMonthSub">Generated</small>
                             </div>
                         </div>
                     </div>
@@ -86,7 +95,10 @@ include('../sidebar/sidebar.php');
                             </div>
                             <div>
                                 <div class="text-muted small">Downloads</div>
-                                <h3 class="mb-0 fw-bold" id="downloadCount">0</h3>
+                                <h3 class="mb-0 fw-bold" id="downloadCount">
+                                    <span class="spinner-border spinner-border-sm text-warning"></span>
+                                </h3>
+                                <small class="text-muted" id="downloadSub">Total</small>
                             </div>
                         </div>
                     </div>
@@ -1140,14 +1152,42 @@ function loadStatistics() {
         url: 'get-tor-statistics.php',
         method: 'GET',
         dataType: 'json',
-        success: function(stats) {
-            $('#totalTORs').text(stats.total      || 0);
-            $('#competentCount').text(stats.competent  || 0);
-            $('#thisMonthCount').text(stats.this_month || 0);
-            $('#downloadCount').text(stats.downloads  || 0);
+        success: function (stats) {
+            if (!stats.success) return;
+
+            // ── Total TORs ────────────────────────────────────────────────────
+            $('#totalTORs').text(stats.total);
+            $('#totalTORsSub').text(
+                stats.this_week > 0
+                    ? `+${stats.this_week} this week`
+                    : 'All records'
+            );
+
+            // ── Competent ─────────────────────────────────────────────────────
+            $('#competentCount').text(stats.competent);
+            const competentPct = stats.total > 0
+                ? Math.round((stats.competent / stats.total) * 100)
+                : 0;
+            $('#competentSub').html(
+                `<span class="text-success fw-semibold">${competentPct}%</span> pass rate`
+            );
+
+            // ── This Month ────────────────────────────────────────────────────
+            $('#thisMonthCount').text(stats.this_month);
+            $('#thisMonthSub').html(
+                stats.not_yet_competent > 0
+                    ? `<span class="text-danger fw-semibold">${stats.not_yet_competent}</span> not yet competent`
+                    : '<span class="text-success">All competent</span>'
+            );
+
+            // ── Downloads ─────────────────────────────────────────────────────
+            $('#downloadCount').text(stats.downloads);
+            $('#downloadSub').text('Total downloads');
         },
-        error: function() {
-            $('#totalTORs, #competentCount, #thisMonthCount, #downloadCount').text(0);
+        error: function () {
+            $('#totalTORs, #competentCount, #thisMonthCount, #downloadCount').text('—');
+            $('#totalTORsSub, #competentSub, #thisMonthSub, #downloadSub')
+                .text('Failed to load');
         }
     });
 }

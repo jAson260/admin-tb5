@@ -1,49 +1,69 @@
 <?php
 
 session_start();
+require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
+checkAdmin();
 
 header('Content-Type: application/json');
 
 try {
-    // Total TORs
-    $totalStmt = $pdo->query("SELECT COUNT(*) as total FROM tor_records");
-    $total = $totalStmt->fetch()['total'] ?? 0;
-    
-    // Competent students
-    $competentStmt = $pdo->query("
-        SELECT COUNT(DISTINCT t.EnrollmentId) as competent 
-        FROM tor_records t
-        WHERE t.Remarks = 'Competent'
-    ");
-    $competent = $competentStmt->fetch()['competent'] ?? 0;
-    
-    // This month TORs
-    $thisMonthStmt = $pdo->query("
-        SELECT COUNT(*) as this_month 
-        FROM tor_records 
-        WHERE MONTH(DateEncoded) = MONTH(CURRENT_DATE())
-        AND YEAR(DateEncoded) = YEAR(CURRENT_DATE())
-    ");
-    $thisMonth = $thisMonthStmt->fetch()['this_month'] ?? 0;
-    
-    // Total downloads (you may need to add a download tracking field)
-    $downloads = 0;
-    
+    // ── Total TORs ────────────────────────────────────────────────────────────
+    $total = $pdo->query("
+        SELECT COUNT(*) FROM tor_records
+    ")->fetchColumn();
+
+    // ── Competent ─────────────────────────────────────────────────────────────
+    $competent = $pdo->query("
+        SELECT COUNT(*) FROM tor_records
+        WHERE Remarks = 'Competent'
+    ")->fetchColumn();
+
+    // ── Not Yet Competent ─────────────────────────────────────────────────────
+    $notYetCompetent = $pdo->query("
+        SELECT COUNT(*) FROM tor_records
+        WHERE Remarks = 'Not Yet Competent'
+    ")->fetchColumn();
+
+    // ── This Month — uses DateEncoded (not CreatedAt) ─────────────────────────
+    $thisMonth = $pdo->query("
+        SELECT COUNT(*) FROM tor_records
+        WHERE MONTH(DateEncoded) = MONTH(NOW())
+        AND   YEAR(DateEncoded)  = YEAR(NOW())
+    ")->fetchColumn();
+
+    // ── This Week — uses DateEncoded ──────────────────────────────────────────
+    $thisWeek = $pdo->query("
+        SELECT COUNT(*) FROM tor_records
+        WHERE DateEncoded >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    ")->fetchColumn();
+
+    // ── Unique students with TOR ───────────────────────────────────────────────
+    $uniqueStudents = $pdo->query("
+        SELECT COUNT(DISTINCT StudentId) FROM tor_records
+    ")->fetchColumn();
+
     echo json_encode([
-        'total' => (int)$total,
-        'competent' => (int)$competent,
-        'this_month' => (int)$thisMonth,
-        'downloads' => (int)$downloads
+        'success'           => true,
+        'total'             => (int) $total,
+        'competent'         => (int) $competent,
+        'not_yet_competent' => (int) $notYetCompetent,
+        'this_month'        => (int) $thisMonth,
+        'this_week'         => (int) $thisWeek,
+        'downloads'         => (int) $uniqueStudents, // no DownloadCount col — use unique students
     ]);
-    
+
 } catch (PDOException $e) {
-    error_log('Get TOR Statistics Error: ' . $e->getMessage());
+    error_log('get-tor-statistics.php error: ' . $e->getMessage());
     echo json_encode([
-        'total' => 0,
-        'competent' => 0,
-        'this_month' => 0,
-        'downloads' => 0
+        'success'           => false,
+        'message'           => $e->getMessage(), // show real error during dev
+        'total'             => 0,
+        'competent'         => 0,
+        'not_yet_competent' => 0,
+        'this_month'        => 0,
+        'this_week'         => 0,
+        'downloads'         => 0,
     ]);
 }
 ?>
