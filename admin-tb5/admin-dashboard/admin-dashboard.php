@@ -970,11 +970,11 @@ include('../sidebar/sidebar.php');
 .status-completed { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
 .status-dropped { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
 
+
 /* Header Gradient */
 .gradient-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #4169E1;
 }
-
 /* View All Link */
 .view-all-link {
     font-size: 0.85rem;

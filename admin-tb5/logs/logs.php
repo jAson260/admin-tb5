@@ -574,35 +574,21 @@ $stats = $statsStmt->fetch();
 }
 
 /* View Toggle Buttons */
-.view-toggle {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.view-toggle .btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.9rem;
-}
-
 .view-toggle .btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #4169E1;
     color: white;
     border-color: transparent;
 }
 
-.view-toggle .btn:not(.active) {
-    background: white;
-    color: #6c757d;
-    border-color: #dee2e6;
-}
-
 .view-toggle .btn:not(.active):hover {
-    background: #f8f9fa;
+    background: #f0f4ff;
+    border-color: #4169E1;
+    color: #4169E1;
 }
 
 /* Pagination */
 .pagination .page-link {
-    color: #667eea;
+    color: #4169E1;
     border: none;
     padding: 0.5rem 0.75rem;
     margin: 0 2px;
@@ -610,18 +596,13 @@ $stats = $statsStmt->fetch();
 }
 
 .pagination .page-item.active .page-link {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #4169E1;
     color: white;
-}
-
-.pagination .page-item.disabled .page-link {
-    color: #6c757d;
-    background: transparent;
 }
 
 /* Modal */
 .modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #4169E1;
     color: white;
 }
 
@@ -629,58 +610,20 @@ $stats = $statsStmt->fetch();
     filter: brightness(0) invert(1);
 }
 
-.modal-body pre {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
-}
-
-/* Filter Section Styles */
-.filter-section {
-    background-color: #f8f9fa;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.filter-label {
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #495057;
-    margin-bottom: 0.25rem;
-}
-
 /* Active Filters Badge */
-.active-filters {
-    background-color: #e9ecef;
-    padding: 0.5rem 1rem;
-    border-radius: 2rem;
-    font-size: 0.85rem;
-}
-
 .active-filters .badge {
-    background-color: #667eea;
+    background-color: #4169E1;
     color: white;
     margin-right: 0.5rem;
     padding: 0.35rem 0.65rem;
 }
 
-.active-filters .badge .bi {
-    font-size: 0.75rem;
-    margin-left: 0.25rem;
-    cursor: pointer;
-}
-
-.active-filters .badge .bi:hover {
-    opacity: 0.8;
-}
 </style>
 
 <div class="content-wrapper">
     <div class="main-content">
         <!-- Page Title Card -->
-        <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card border-0 shadow-sm mb-4" style="background: #4169E1;">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
