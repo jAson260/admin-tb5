@@ -153,8 +153,8 @@ if ($sortBy === 'name') {
 
 <div class="content-wrapper">
     <div class="main-content">
-        <!-- Page Title Card -->
-        <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+         <!-- Page Title Card -->
+        <div class="card border-0 shadow-sm mb-4" style="background: #4169E1;">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
@@ -401,7 +401,7 @@ if ($sortBy === 'name') {
 <div class="modal fade" id="studentDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="modal-header" style="background: #4169E1;">
                 <h5 class="modal-title text-white">
                     <i class="bi bi-person-badge me-2"></i>Student Details & Documents
                 </h5>
@@ -493,7 +493,7 @@ if ($sortBy === 'name') {
 <div class="modal fade" id="viewDocumentModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="modal-header" style="background: #4169E1;">
                 <h5 class="modal-title text-white">View Document</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -708,7 +708,7 @@ $('#viewDocumentModal').on('hidden.bs.modal', function () {
 .modal.fade .modal-dialog { transition: transform 0.3s ease-out; }
 .modal.show .modal-dialog { transform: none; }
 #viewDocumentModal .modal-body { padding: 0; min-height: 300px; }
-#viewDocumentModal .modal-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+#viewDocumentModal .modal-header { background: #4169E1; color: white; }
 #viewDocumentModal .btn-close-white { filter: brightness(0) invert(1); }
 </style>
 

@@ -11,7 +11,7 @@ include('../sidebar/sidebar.php');
     <div class="main-content">
 
         <!-- Page Title Card -->
-        <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card border-0 shadow-sm mb-4" style="background: #4169E1;">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
@@ -188,8 +188,7 @@ include('../sidebar/sidebar.php');
 <div class="modal fade" id="createBatchModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0"
-                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="modal-header border-0" style="background: #4169E1;">
                 <h5 class="modal-title text-white fw-bold" id="createBatchModalTitle">
                     <i class="bi bi-plus-circle me-2"></i>Create New Batch
                 </h5>
@@ -322,8 +321,7 @@ include('../sidebar/sidebar.php');
 <div class="modal fade" id="viewBatchModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0"
-                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="modal-header border-0" style="background: #4169E1;">
                 <h5 class="modal-title text-white fw-bold">
                     <i class="bi bi-eye me-2"></i>Batch Details
                 </h5>

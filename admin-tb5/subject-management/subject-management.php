@@ -27,7 +27,7 @@ try {
 
         <!-- Page Header -->
         <div class="card border-0 shadow-sm mb-4"
-            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            style="background: #4169E1;">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
