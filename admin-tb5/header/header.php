@@ -510,41 +510,54 @@ $unreadCount = getUnreadNotificationCount($pdo);
             padding: 30px;
         }
         
-        /* Custom scrollbar for notification dropdown */
+        /* Custom scrollbar — all scrollable areas */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f4ff;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4169E1;
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2e51b8;
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: #f1f4ff;
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #4169E1 #f1f4ff;
+        }
+
+        /* Notification list specific scrollbar (override old one) */
         .notification-list::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .notification-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: #f1f4ff;
+            border-radius: 10px;
         }
-        
+
         .notification-list::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
+            background: #4169E1;
+            border-radius: 10px;
         }
-        
+
         .notification-list::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        .read-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--primary-blue);
-            margin-left: 8px;
-        }
-        
-        .notification-loader {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .spinner-border-sm {
-            width: 1rem;
-            height: 1rem;
-            border-width: 0.15em;
+            background: #2e51b8;
         }
     </style>
 
