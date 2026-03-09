@@ -3,7 +3,7 @@
 include('../header/header.php');
 include('../sidebar/sidebar.php');
 
-// Fix the path to db-connect.php - going up one level from admin-tb5/admin-tb5/logs/ to admin-tb5/
+// Fix the path to db-connect.php
 require_once('../../db-connect.php');
 
 // Get filter parameters
@@ -11,47 +11,18 @@ $adminFilter = isset($_GET['admin']) ? $_GET['admin'] : '';
 $actionFilter = isset($_GET['action']) ? $_GET['action'] : '';
 $dateFilter = isset($_GET['date']) ? $_GET['date'] : '';
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
-$viewMode = isset($_GET['view']) ? $_GET['view'] : 'recent'; // 'recent' or 'archived'
-$logType = isset($_GET['log_type']) ? $_GET['log_type'] : 'all'; // 'all', 'admin_changes', 'student_logins', 'student_changes', 'pending'
+$viewMode = isset($_GET['view']) ? $_GET['view'] : 'recent';
+$logType = isset($_GET['log_type']) ? $_GET['log_type'] : 'all';
 
 // Pagination parameters
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $entriesPerPage = isset($_GET['entries']) ? (int)$_GET['entries'] : 10;
 $offset = ($page - 1) * $entriesPerPage;
 
-// Build the base query for combined activity logs using actual table columns
-// REMOVED: document_approval, account_deletion, admin_deactivation
+// Build the base query for combined activity logs
 $baseQuery = "
     SELECT * FROM (
-        -- Student login attempts (from userlogins)
-        SELECT 
-            CONCAT('LOGIN_', ul.LoginProvider, '_', ul.ProviderKey) as Id,
-            'student_login' as LogType,
-            ul.UserId as TargetId,
-            'Student Login' as Action,
-            CONCAT(
-                'Student ',
-                COALESCE(si.FirstName, 'Unknown'), ' ', COALESCE(si.LastName, ''),
-                ' (ID: ', ul.UserId, ') logged in via ', ul.LoginProvider
-            ) as Description,
-            NOW() as CreatedAt,
-            NULL as AdminId,
-            NULL as AdminName,
-            'Student Activity' as Category,
-            'info' as Status,
-            si.FirstName as StudentFirstName,
-            si.LastName as StudentLastName,
-            si.Email as StudentEmail,
-            si.Status as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
-        FROM userlogins ul
-        LEFT JOIN studentinfos si ON ul.UserId = si.Id
-        
-        UNION ALL
-        
-        -- Student approvals (when status changes to Approved)
+        -- Student approvals (when admin approves a student)
         SELECT 
             CONCAT('APPROVED_', si.Id, '_', UNIX_TIMESTAMP(si.UpdatedAt)) as Id,
             'student_approved' as LogType,
@@ -59,7 +30,7 @@ $baseQuery = "
             'Student Approved' as Action,
             CONCAT(
                 'Student ', si.FirstName, ' ', si.LastName,
-                ' (', si.Email, ') has been APPROVED and can now access the system'
+                ' (', si.Email, ') has been APPROVED'
             ) as Description,
             si.UpdatedAt as CreatedAt,
             NULL as AdminId,
@@ -69,12 +40,34 @@ $baseQuery = "
             si.FirstName as StudentFirstName,
             si.LastName as StudentLastName,
             si.Email as StudentEmail,
-            si.Status as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            si.Status as StudentStatus
         FROM studentinfos si
         WHERE si.Status = 'Approved'
+        AND si.UpdatedAt != si.EntryDate
+        
+        UNION ALL
+        
+        -- Student rejections (when admin rejects a student)
+        SELECT 
+            CONCAT('REJECTED_', si.Id, '_', UNIX_TIMESTAMP(si.UpdatedAt)) as Id,
+            'student_rejected' as LogType,
+            si.Id as TargetId,
+            'Student Rejected' as Action,
+            CONCAT(
+                'Student ', si.FirstName, ' ', si.LastName,
+                ' (', si.Email, ') has been REJECTED'
+            ) as Description,
+            si.UpdatedAt as CreatedAt,
+            NULL as AdminId,
+            NULL as AdminName,
+            'Student Rejection' as Category,
+            'danger' as Status,
+            si.FirstName as StudentFirstName,
+            si.LastName as StudentLastName,
+            si.Email as StudentEmail,
+            si.Status as StudentStatus
+        FROM studentinfos si
+        WHERE si.Status = 'Rejected'
         AND si.UpdatedAt != si.EntryDate
         
         UNION ALL
@@ -87,7 +80,7 @@ $baseQuery = "
             'Student in Queue' as Action,
             CONCAT(
                 'Student ', si.FirstName, ' ', si.LastName,
-                ' (', si.Email, ') is in queue waiting for approval'
+                ' (', si.Email, ') is waiting for approval'
             ) as Description,
             si.EntryDate as CreatedAt,
             NULL as AdminId,
@@ -97,46 +90,9 @@ $baseQuery = "
             si.FirstName as StudentFirstName,
             si.LastName as StudentLastName,
             si.Email as StudentEmail,
-            si.Status as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            si.Status as StudentStatus
         FROM studentinfos si
         WHERE si.Status = 'Pending'
-        
-        UNION ALL
-        
-        -- Student status changes (other than approval)
-        SELECT 
-            CONCAT('STATUS_', si.Id, '_', UNIX_TIMESTAMP(si.UpdatedAt)) as Id,
-            'student_status' as LogType,
-            si.Id as TargetId,
-            CONCAT('Status: ', si.Status) as Action,
-            CONCAT(
-                'Student ', si.FirstName, ' ', si.LastName,
-                ' (', si.Email, ') status changed to ', si.Status
-            ) as Description,
-            si.UpdatedAt as CreatedAt,
-            NULL as AdminId,
-            NULL as AdminName,
-            'Student Status' as Category,
-            CASE 
-                WHEN si.Status = 'Approved' THEN 'success'
-                WHEN si.Status = 'Rejected' THEN 'danger'
-                WHEN si.Status = 'Suspended' THEN 'warning'
-                ELSE 'secondary'
-            END as Status,
-            si.FirstName as StudentFirstName,
-            si.LastName as StudentLastName,
-            si.Email as StudentEmail,
-            si.Status as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
-        FROM studentinfos si
-        WHERE si.UpdatedAt IS NOT NULL 
-        AND si.UpdatedAt != si.EntryDate
-        AND si.Status != 'Approved'  -- Exclude approvals (already handled above)
         
         UNION ALL
         
@@ -148,7 +104,7 @@ $baseQuery = "
             'Student Registered' as Action,
             CONCAT(
                 'New student registered: ', si.FirstName, ' ', si.LastName,
-                ' (', si.Email, ') - Status: ', si.Status
+                ' (', si.Email, ')'
             ) as Description,
             si.EntryDate as CreatedAt,
             NULL as AdminId,
@@ -162,11 +118,93 @@ $baseQuery = "
             si.FirstName as StudentFirstName,
             si.LastName as StudentLastName,
             si.Email as StudentEmail,
-            si.Status as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            si.Status as StudentStatus
         FROM studentinfos si
+        
+        UNION ALL
+        
+        -- Document approvals (from documents table)
+        SELECT 
+            CONCAT('DOC_APPROVED_', d.Id, '_', UNIX_TIMESTAMP(NOW())) as Id,
+            'document_approved' as LogType,
+            d.StudentInfoId as TargetId,
+            'Document Approved' as Action,
+            CONCAT(
+                CASE 
+                    WHEN d.PSAStatus = 'approved' THEN 'PSA Birth Certificate'
+                    WHEN d.TORStatus = 'approved' THEN 'Transcript of Records'
+                    WHEN d.DiplomaStatus = 'approved' THEN 'Diploma'
+                    WHEN d.Form137Status = 'approved' THEN 'Form 137'
+                    WHEN d.ALSCertificateStatus = 'approved' THEN 'ALS Certificate'
+                    WHEN d.MarriageCertificateStatus = 'approved' THEN 'Marriage Certificate'
+                    WHEN d.BarangayIndigencyStatus = 'approved' THEN 'Barangay Indigency'
+                    WHEN d.CertificateOfResidencyStatus = 'approved' THEN 'Certificate of Residency'
+                END,
+                ' approved for ', s.FirstName, ' ', s.LastName
+            ) as Description,
+            NOW() as CreatedAt,
+            NULL as AdminId,
+            NULL as AdminName,
+            'Document Approval' as Category,
+            'success' as Status,
+            s.FirstName as StudentFirstName,
+            s.LastName as StudentLastName,
+            s.Email as StudentEmail,
+            s.Status as StudentStatus
+        FROM documents d
+        INNER JOIN studentinfos s ON d.StudentInfoId = s.Id
+        WHERE 
+            d.PSAStatus = 'approved' OR
+            d.TORStatus = 'approved' OR
+            d.DiplomaStatus = 'approved' OR
+            d.Form137Status = 'approved' OR
+            d.ALSCertificateStatus = 'approved' OR
+            d.MarriageCertificateStatus = 'approved' OR
+            d.BarangayIndigencyStatus = 'approved' OR
+            d.CertificateOfResidencyStatus = 'approved'
+        
+        UNION ALL
+        
+        -- Document rejections (from documents table)
+        SELECT 
+            CONCAT('DOC_REJECTED_', d.Id, '_', UNIX_TIMESTAMP(NOW())) as Id,
+            'document_rejected' as LogType,
+            d.StudentInfoId as TargetId,
+            'Document Rejected' as Action,
+            CONCAT(
+                CASE 
+                    WHEN d.PSAStatus = 'rejected' THEN 'PSA Birth Certificate'
+                    WHEN d.TORStatus = 'rejected' THEN 'Transcript of Records'
+                    WHEN d.DiplomaStatus = 'rejected' THEN 'Diploma'
+                    WHEN d.Form137Status = 'rejected' THEN 'Form 137'
+                    WHEN d.ALSCertificateStatus = 'rejected' THEN 'ALS Certificate'
+                    WHEN d.MarriageCertificateStatus = 'rejected' THEN 'Marriage Certificate'
+                    WHEN d.BarangayIndigencyStatus = 'rejected' THEN 'Barangay Indigency'
+                    WHEN d.CertificateOfResidencyStatus = 'rejected' THEN 'Certificate of Residency'
+                END,
+                ' rejected for ', s.FirstName, ' ', s.LastName,
+                IF(d.Remarks IS NOT NULL AND d.Remarks != '', CONCAT(' - Reason: ', d.Remarks), '')
+            ) as Description,
+            NOW() as CreatedAt,
+            NULL as AdminId,
+            NULL as AdminName,
+            'Document Rejection' as Category,
+            'danger' as Status,
+            s.FirstName as StudentFirstName,
+            s.LastName as StudentLastName,
+            s.Email as StudentEmail,
+            s.Status as StudentStatus
+        FROM documents d
+        INNER JOIN studentinfos s ON d.StudentInfoId = s.Id
+        WHERE 
+            d.PSAStatus = 'rejected' OR
+            d.TORStatus = 'rejected' OR
+            d.DiplomaStatus = 'rejected' OR
+            d.Form137Status = 'rejected' OR
+            d.ALSCertificateStatus = 'rejected' OR
+            d.MarriageCertificateStatus = 'rejected' OR
+            d.BarangayIndigencyStatus = 'rejected' OR
+            d.CertificateOfResidencyStatus = 'rejected'
         
         UNION ALL
         
@@ -175,20 +213,9 @@ $baseQuery = "
             CONCAT('ADMIN_', a.Id, '_', UNIX_TIMESTAMP(a.UpdatedAt)) as Id,
             'admin_change' as LogType,
             a.Id as TargetId,
-            CONCAT('Admin ', 
-                CASE 
-                    WHEN a.CreatedAt = a.UpdatedAt THEN 'Created'
-                    ELSE 'Updated'
-                END
-            ) as Action,
+            'Admin Updated' as Action,
             CONCAT(
-                'Admin ', a.Username, ' (', a.FirstName, ' ', a.LastName, ') ',
-                CASE 
-                    WHEN a.CreatedAt = a.UpdatedAt THEN 'account created'
-                    ELSE 'account updated'
-                END,
-                ' - Role: ', a.Role,
-                ', Status: ', a.Status
+                'Admin ', a.Username, ' (', a.FirstName, ' ', a.LastName, ') account updated'
             ) as Description,
             a.UpdatedAt as CreatedAt,
             a.Id as AdminId,
@@ -198,12 +225,10 @@ $baseQuery = "
             NULL as StudentFirstName,
             NULL as StudentLastName,
             NULL as StudentEmail,
-            NULL as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            NULL as StudentStatus
         FROM admins a
         WHERE a.UpdatedAt IS NOT NULL
+        AND a.UpdatedAt != a.CreatedAt
         
         UNION ALL
         
@@ -214,8 +239,7 @@ $baseQuery = "
             a.Id as TargetId,
             'Admin Created' as Action,
             CONCAT(
-                'New admin account created: ', a.Username, ' (', a.FirstName, ' ', a.LastName, ')',
-                ' - Role: ', a.Role
+                'New admin account: ', a.Username, ' (', a.FirstName, ' ', a.LastName, ')'
             ) as Description,
             a.CreatedAt as CreatedAt,
             a.Id as AdminId,
@@ -225,10 +249,7 @@ $baseQuery = "
             NULL as StudentFirstName,
             NULL as StudentLastName,
             NULL as StudentEmail,
-            NULL as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            NULL as StudentStatus
         FROM admins a
         WHERE a.CreatedAt IS NOT NULL
         
@@ -241,7 +262,7 @@ $baseQuery = "
             a.Id as TargetId,
             'Admin Login' as Action,
             CONCAT(
-                'Admin ', a.Username, ' (', a.FirstName, ' ', a.LastName, ') logged in'
+                'Admin ', a.Username, ' logged in'
             ) as Description,
             a.LastLogin as CreatedAt,
             a.Id as AdminId,
@@ -251,47 +272,125 @@ $baseQuery = "
             NULL as StudentFirstName,
             NULL as StudentLastName,
             NULL as StudentEmail,
-            NULL as StudentStatus,
-            NULL as IPAddress,
-            NULL as SessionId,
-            NULL as UserAgent
+            NULL as StudentStatus
         FROM admins a
         WHERE a.LastLogin IS NOT NULL
+        
+        UNION ALL
+        
+        -- Course creations and updates
+        SELECT 
+            CONCAT('COURSE_', c.Id, '_', UNIX_TIMESTAMP(COALESCE(c.UpdatedAt, c.CreatedAt))) as Id,
+            'course_change' as LogType,
+            c.Id as TargetId,
+            CASE 
+                WHEN c.CreatedAt = COALESCE(c.UpdatedAt, c.CreatedAt) THEN 'Course Created'
+                ELSE 'Course Updated'
+            END as Action,
+            CONCAT(
+                CASE 
+                    WHEN c.CreatedAt = COALESCE(c.UpdatedAt, c.CreatedAt) THEN 'New course created: '
+                    ELSE 'Course updated: '
+                END,
+                c.CourseCode, ' - ', c.CourseName,
+                ' (', c.School, ')'
+            ) as Description,
+            COALESCE(c.UpdatedAt, c.CreatedAt) as CreatedAt,
+            NULL as AdminId,
+            NULL as AdminName,
+            'Course Management' as Category,
+            CASE 
+                WHEN c.IsActive = 1 THEN 'success'
+                ELSE 'secondary'
+            END as Status,
+            NULL as StudentFirstName,
+            NULL as StudentLastName,
+            NULL as StudentEmail,
+            NULL as StudentStatus
+        FROM courses c
+        WHERE c.CreatedAt IS NOT NULL OR c.UpdatedAt IS NOT NULL
+        
+        UNION ALL
+        
+        -- Batch creations and updates
+        SELECT 
+            CONCAT('BATCH_', b.Id, '_', UNIX_TIMESTAMP(COALESCE(b.UpdatedAt, b.CreatedAt))) as Id,
+            'batch_change' as LogType,
+            b.Id as TargetId,
+            CASE 
+                WHEN b.CreatedAt = COALESCE(b.UpdatedAt, b.CreatedAt) THEN 'Batch Created'
+                ELSE 'Batch Updated'
+            END as Action,
+            CONCAT(
+                CASE 
+                    WHEN b.CreatedAt = COALESCE(b.UpdatedAt, b.CreatedAt) THEN 'New batch created: '
+                    ELSE 'Batch updated: '
+                END,
+                b.BatchName, ' (', b.BatchCode, ')'
+            ) as Description,
+            COALESCE(b.UpdatedAt, b.CreatedAt) as CreatedAt,
+            NULL as AdminId,
+            NULL as AdminName,
+            'Batch Management' as Category,
+            CASE 
+                WHEN b.Status = 'Active' THEN 'success'
+                WHEN b.Status = 'Completed' THEN 'info'
+                ELSE 'warning'
+            END as Status,
+            NULL as StudentFirstName,
+            NULL as StudentLastName,
+            NULL as StudentEmail,
+            NULL as StudentStatus
+        FROM batches b
+        WHERE (b.CreatedAt IS NOT NULL OR b.UpdatedAt IS NOT NULL)
     ) combined_logs
     WHERE 1=1
 ";
 
 // Build filter conditions
 $filterConditions = "";
+$params = [];
 
 // Apply search filter
 if (!empty($searchTerm)) {
-    $filterConditions .= " AND (Description LIKE '%$searchTerm%' 
-                OR StudentFirstName LIKE '%$searchTerm%' 
-                OR StudentLastName LIKE '%$searchTerm%' 
-                OR StudentEmail LIKE '%$searchTerm%'
-                OR AdminName LIKE '%$searchTerm%')";
+    $filterConditions .= " AND (Description LIKE :search1 
+                OR StudentFirstName LIKE :search2 
+                OR StudentLastName LIKE :search3 
+                OR StudentEmail LIKE :search4
+                OR AdminName LIKE :search5)";
+    $searchParam = "%$searchTerm%";
+    $params[':search1'] = $searchParam;
+    $params[':search2'] = $searchParam;
+    $params[':search3'] = $searchParam;
+    $params[':search4'] = $searchParam;
+    $params[':search5'] = $searchParam;
 }
 
-// Apply log type filter - REMOVED approvals and deletions options
+// Apply log type filter
 if ($logType != 'all') {
     switch($logType) {
         case 'admin_changes':
             $filterConditions .= " AND LogType IN ('admin_change', 'admin_creation', 'admin_login')";
             break;
-        case 'student_logins':
-            $filterConditions .= " AND LogType IN ('student_login')";
-            break;
         case 'student_changes':
-            $filterConditions .= " AND LogType IN ('student_status', 'student_creation', 'student_approved', 'student_pending')";
+            $filterConditions .= " AND LogType IN ('student_creation', 'student_approved', 'student_rejected', 'student_pending')";
+            break;
+        case 'document_actions':
+            $filterConditions .= " AND LogType IN ('document_approved', 'document_rejected')";
             break;
         case 'pending':
             $filterConditions .= " AND LogType IN ('student_pending')";
             break;
+        case 'course_changes':
+            $filterConditions .= " AND LogType IN ('course_change')";
+            break;
+        case 'batch_changes':
+            $filterConditions .= " AND LogType IN ('batch_change')";
+            break;
     }
 }
 
-// Apply view mode filter (recent = last 30 days, archived = older than 30 days)
+// Apply view mode filter
 if ($viewMode === 'recent') {
     $filterConditions .= " AND CreatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
 } elseif ($viewMode === 'archived') {
@@ -300,12 +399,14 @@ if ($viewMode === 'recent') {
 
 // Apply action filter
 if (!empty($actionFilter)) {
-    $filterConditions .= " AND Action LIKE '%$actionFilter%'";
+    $filterConditions .= " AND Action LIKE :action";
+    $params[':action'] = "%$actionFilter%";
 }
 
 // Apply admin filter
 if (!empty($adminFilter)) {
-    $filterConditions .= " AND AdminId = '$adminFilter'";
+    $filterConditions .= " AND AdminId = :adminId";
+    $params[':adminId'] = $adminFilter;
 }
 
 // Apply date filter
@@ -331,45 +432,68 @@ $fullQuery = $baseQuery . $filterConditions;
 
 // Get total count for pagination
 $countQuery = "SELECT COUNT(*) as total FROM ($fullQuery) as count_table";
-$countStmt = $pdo->query($countQuery);
+$countStmt = $pdo->prepare($countQuery);
+$countStmt->execute($params);
 $totalEntries = $countStmt->fetch()['total'];
 $totalPages = ceil($totalEntries / $entriesPerPage);
 
 // Add ordering and pagination
-$fullQuery .= " ORDER BY CreatedAt DESC LIMIT $offset, $entriesPerPage";
+$fullQuery .= " ORDER BY CreatedAt DESC LIMIT :offset, :entriesPerPage";
 
-// Execute main query
-$stmt = $pdo->query($fullQuery);
+// Prepare and execute main query with pagination
+$stmt = $pdo->prepare($fullQuery);
+
+// Bind parameters
+foreach ($params as $key => $value) {
+    $stmt->bindValue($key, $value);
+}
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':entriesPerPage', $entriesPerPage, PDO::PARAM_INT);
+$stmt->execute();
+
 $logs = $stmt->fetchAll();
 
-// Get counts for recent and archived
+// Get counts for recent and archived (with filters applied)
 $recentCountQuery = $baseQuery . $filterConditions . " AND CreatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-$recentCountStmt = $pdo->query("SELECT COUNT(*) as recent FROM ($recentCountQuery) as recent_table");
+$recentCountStmt = $pdo->prepare("SELECT COUNT(*) as recent FROM ($recentCountQuery) as recent_table");
+$recentCountStmt->execute($params);
 $recentCount = $recentCountStmt->fetch()['recent'];
 
 $archivedCountQuery = $baseQuery . $filterConditions . " AND CreatedAt < DATE_SUB(NOW(), INTERVAL 30 DAY)";
-$archivedCountStmt = $pdo->query("SELECT COUNT(*) as archived FROM ($archivedCountQuery) as archived_table");
+$archivedCountStmt = $pdo->prepare("SELECT COUNT(*) as archived FROM ($archivedCountQuery) as archived_table");
+$archivedCountStmt->execute($params);
 $archivedCount = $archivedCountStmt->fetch()['archived'];
 
 // Get admins for filter dropdown
 $adminsStmt = $pdo->query("SELECT Id, Username, FirstName, LastName, Email FROM admins WHERE Status = 'Active' ORDER BY FirstName, LastName");
 $admins = $adminsStmt->fetchAll();
 
-// Get today's logs count
+// Get today's logs count (with filters applied)
 $todayQuery = $baseQuery . $filterConditions . " AND DATE(CreatedAt) = CURDATE()";
-$todayCountStmt = $pdo->query("SELECT COUNT(*) as today FROM ($todayQuery) as today_table");
+$todayCountStmt = $pdo->prepare("SELECT COUNT(*) as today FROM ($todayQuery) as today_table");
+$todayCountStmt->execute($params);
 $todayCount = $todayCountStmt->fetch()['today'];
 
-// Get statistics - REMOVED document_approvals and critical actions
+// Get statistics
 $statsQuery = "
     SELECT 
-        (SELECT COUNT(*) FROM studentinfos WHERE UpdatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND Status = 'Approved' AND UpdatedAt != EntryDate) as recent_approvals_count,
-        (SELECT COUNT(*) FROM studentinfos WHERE Status = 'Approved' AND EntryDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as recent_approved_students,
         (SELECT COUNT(*) FROM studentinfos WHERE Status = 'Pending') as pending_students,
-        (SELECT COUNT(*) FROM studentinfos WHERE Status = 'Pending' AND EntryDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as recent_pending_students,
         (SELECT COUNT(*) FROM studentinfos WHERE Status = 'Approved') as total_approved_students,
+        (SELECT COUNT(*) FROM studentinfos WHERE Status = 'Rejected') as total_rejected_students,
         (SELECT COUNT(*) FROM admins WHERE Status = 'Active') as active_admins,
-        (SELECT COUNT(*) FROM studentinfos) as total_students
+        (SELECT COUNT(*) FROM studentinfos) as total_students,
+        (SELECT COUNT(*) FROM documents WHERE 
+            PSAStatus = 'approved' OR
+            TORStatus = 'approved' OR
+            DiplomaStatus = 'approved' OR
+            Form137Status = 'approved' OR
+            ALSCertificateStatus = 'approved' OR
+            MarriageCertificateStatus = 'approved' OR
+            BarangayIndigencyStatus = 'approved' OR
+            CertificateOfResidencyStatus = 'approved'
+        ) as total_document_approvals,
+        (SELECT COUNT(*) FROM courses) as total_courses,
+        (SELECT COUNT(*) FROM batches) as total_batches
 ";
 $statsStmt = $pdo->query($statsQuery);
 $stats = $statsStmt->fetch();
@@ -508,6 +632,46 @@ $stats = $statsStmt->fetch();
     border-radius: 0.5rem;
     font-size: 0.85rem;
 }
+
+/* Filter Section Styles */
+.filter-section {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+/* Active Filters Badge */
+.active-filters {
+    background-color: #e9ecef;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+}
+
+.active-filters .badge {
+    background-color: #667eea;
+    color: white;
+    margin-right: 0.5rem;
+    padding: 0.35rem 0.65rem;
+}
+
+.active-filters .badge .bi {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+    cursor: pointer;
+}
+
+.active-filters .badge .bi:hover {
+    opacity: 0.8;
+}
 </style>
 
 <div class="content-wrapper">
@@ -522,21 +686,14 @@ $stats = $statsStmt->fetch();
                             <span class="real-time-indicator ms-2"></span>
                         </h2>
                         <p class="text-white-50 mb-0">
-                            Track and monitor student registrations, approvals, logins, and admin activities
+                            Track and monitor all system activities including admin actions, student activities, course/batch management, and document approvals
                         </p>
-                    </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <div class="d-flex justify-content-md-end gap-2 flex-wrap">
-                            <button class="btn btn-light btn-sm" onclick="exportLogs()">
-                                <i class="bi bi-download me-1"></i> Export
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Statistics Cards - UPDATED -->
+        <!-- Statistics Cards -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm">
@@ -548,7 +705,7 @@ $stats = $statsStmt->fetch();
                             <div>
                                 <h6 class="text-muted mb-0">Total Logs</h6>
                                 <h3 class="mb-0 fw-bold"><?php echo number_format($totalEntries); ?></h3>
-                                <small class="text-muted">All time</small>
+                                <small class="text-muted">Filtered results</small>
                             </div>
                         </div>
                     </div>
@@ -574,13 +731,13 @@ $stats = $statsStmt->fetch();
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-person-check text-info" style="font-size: 1.5rem;"></i>
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-file-earmark-check text-warning" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">New Students</h6>
-                                <h3 class="mb-0 fw-bold"><?php echo number_format($stats['recent_approved_students'] ?? 0); ?></h3>
-                                <small class="text-muted">Approved last 30 days</small>
+                                <h6 class="text-muted mb-0">Document Actions</h6>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format($stats['total_document_approvals'] ?? 0); ?></h3>
+                                <small class="text-muted">Total approved/rejected</small>
                             </div>
                         </div>
                     </div>
@@ -590,13 +747,13 @@ $stats = $statsStmt->fetch();
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
-                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-shield-check text-warning" style="font-size: 1.5rem;"></i>
+                            <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-shield-check text-info" style="font-size: 1.5rem;"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">Active Admins</h6>
-                                <h3 class="mb-0 fw-bold"><?php echo number_format($stats['active_admins'] ?? 0); ?></h3>
-                                <small class="text-muted">Currently active</small>
+                                <h6 class="text-muted mb-0">Courses/Batches</h6>
+                                <h3 class="mb-0 fw-bold"><?php echo number_format(($stats['total_courses'] ?? 0) + ($stats['total_batches'] ?? 0)); ?></h3>
+                                <small class="text-muted">Total managed</small>
                             </div>
                         </div>
                     </div>
@@ -638,17 +795,66 @@ $stats = $statsStmt->fetch();
             </div>
         </div>
 
+        <!-- Active Filters Display -->
+        <?php if(!empty($searchTerm) || !empty($adminFilter) || $logType != 'all' || !empty($dateFilter) || !empty($actionFilter)): ?>
+        <div class="active-filters mb-3">
+            <i class="bi bi-funnel-fill me-2"></i> Active Filters:
+            <?php if(!empty($searchTerm)): ?>
+                <span class="badge">
+                    Search: "<?php echo htmlspecialchars($searchTerm); ?>"
+                    <i class="bi bi-x" onclick="removeFilter('search')"></i>
+                </span>
+            <?php endif; ?>
+            <?php if(!empty($adminFilter)): 
+                $adminName = '';
+                foreach($admins as $admin) {
+                    if($admin['Id'] == $adminFilter) {
+                        $adminName = $admin['FirstName'] . ' ' . $admin['LastName'];
+                        break;
+                    }
+                }
+            ?>
+                <span class="badge">
+                    Admin: <?php echo htmlspecialchars($adminName); ?>
+                    <i class="bi bi-x" onclick="removeFilter('admin')"></i>
+                </span>
+            <?php endif; ?>
+            <?php if($logType != 'all'): ?>
+                <span class="badge">
+                    Type: <?php echo ucwords(str_replace('_', ' ', $logType)); ?>
+                    <i class="bi bi-x" onclick="removeFilter('log_type')"></i>
+                </span>
+            <?php endif; ?>
+            <?php if(!empty($dateFilter)): ?>
+                <span class="badge">
+                    Date: <?php echo ucfirst($dateFilter); ?>
+                    <i class="bi bi-x" onclick="removeFilter('date')"></i>
+                </span>
+            <?php endif; ?>
+            <?php if(!empty($actionFilter)): ?>
+                <span class="badge">
+                    Action: <?php echo htmlspecialchars($actionFilter); ?>
+                    <i class="bi bi-x" onclick="removeFilter('action')"></i>
+                </span>
+            <?php endif; ?>
+            <span class="badge bg-secondary" onclick="resetAllFilters()" style="cursor: pointer;">
+                <i class="bi bi-arrow-counterclockwise"></i> Clear All
+            </span>
+        </div>
+        <?php endif; ?>
+
         <!-- Filters Section -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <form method="GET" action="" id="filterForm">
-                    <input type="hidden" name="view" value="<?php echo $viewMode; ?>">
+                    <input type="hidden" name="view" value="<?php echo $viewMode; ?>" id="viewInput">
                     <input type="hidden" name="page" value="1" id="pageInput">
                     <input type="hidden" name="entries" value="<?php echo $entriesPerPage; ?>" id="entriesInput">
                     
                     <div class="row g-3">
                         <!-- Search Bar -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="filter-label">Search</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0">
                                     <i class="bi bi-search"></i>
@@ -659,6 +865,7 @@ $stats = $statsStmt->fetch();
                         
                         <!-- Admin Filter -->
                         <div class="col-md-2">
+                            <label class="filter-label">Admin</label>
                             <select class="form-select" name="admin" id="adminFilter">
                                 <option value="">All Admins</option>
                                 <?php foreach($admins as $admin): ?>
@@ -669,19 +876,23 @@ $stats = $statsStmt->fetch();
                             </select>
                         </div>
                         
-                        <!-- Log Type Filter - UPDATED: Removed approvals and deletions -->
+                        <!-- Log Type Filter -->
                         <div class="col-md-2">
+                            <label class="filter-label">Log Type</label>
                             <select class="form-select" name="log_type" id="logTypeFilter">
                                 <option value="all" <?php echo $logType == 'all' ? 'selected' : ''; ?>>All Activities</option>
-                                <option value="student_logins" <?php echo $logType == 'student_logins' ? 'selected' : ''; ?>>Student Logins</option>
-                                <option value="student_changes" <?php echo $logType == 'student_changes' ? 'selected' : ''; ?>>Student Changes</option>
                                 <option value="admin_changes" <?php echo $logType == 'admin_changes' ? 'selected' : ''; ?>>Admin Actions</option>
+                                <option value="student_changes" <?php echo $logType == 'student_changes' ? 'selected' : ''; ?>>Student Changes</option>
+                                <option value="document_actions" <?php echo $logType == 'document_actions' ? 'selected' : ''; ?>>Document Actions</option>
+                                <option value="course_changes" <?php echo $logType == 'course_changes' ? 'selected' : ''; ?>>Course Changes</option>
+                                <option value="batch_changes" <?php echo $logType == 'batch_changes' ? 'selected' : ''; ?>>Batch Changes</option>
                                 <option value="pending" <?php echo $logType == 'pending' ? 'selected' : ''; ?>>Pending Queue</option>
                             </select>
                         </div>
                         
                         <!-- Date Filter -->
                         <div class="col-md-2">
+                            <label class="filter-label">Date Range</label>
                             <select class="form-select" name="date" id="dateFilter">
                                 <option value="">All Time</option>
                                 <option value="today" <?php echo $dateFilter == 'today' ? 'selected' : ''; ?>>Today</option>
@@ -691,10 +902,25 @@ $stats = $statsStmt->fetch();
                             </select>
                         </div>
                         
-                        <!-- Reset Button -->
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-outline-secondary w-100" id="resetFilters">
+                        <!-- Action Filter (optional) -->
+                        <div class="col-md-3">
+                            <label class="filter-label">Action (Optional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-tag"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" name="action" id="actionFilter" placeholder="e.g., Approved, Registered, Created..." value="<?php echo htmlspecialchars($actionFilter); ?>">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
                                 <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel me-1"></i> Apply Filters
                             </button>
                         </div>
                     </div>
@@ -702,7 +928,7 @@ $stats = $statsStmt->fetch();
             </div>
         </div>
 
-        <!-- Quick Stats Row - UPDATED -->
+        <!-- Quick Stats Row -->
         <div class="row mb-3">
             <div class="col-md-12">
                 <div class="d-flex align-items-center gap-3 flex-wrap">
@@ -712,11 +938,20 @@ $stats = $statsStmt->fetch();
                     <span class="badge bg-warning p-2">
                         <i class="bi bi-person-fill me-1"></i> Pending: <?php echo number_format($stats['pending_students'] ?? 0); ?>
                     </span>
+                    <span class="badge bg-danger p-2">
+                        <i class="bi bi-person-x me-1"></i> Rejected: <?php echo number_format($stats['total_rejected_students'] ?? 0); ?>
+                    </span>
                     <span class="badge bg-info p-2">
-                        <i class="bi bi-people me-1"></i> Total Students: <?php echo number_format($stats['total_students'] ?? 0); ?>
+                        <i class="bi bi-file-earmark-check me-1"></i> Document Actions: <?php echo number_format($stats['total_document_approvals'] ?? 0); ?>
                     </span>
                     <span class="badge bg-primary p-2">
                         <i class="bi bi-shield me-1"></i> Active Admins: <?php echo number_format($stats['active_admins'] ?? 0); ?>
+                    </span>
+                    <span class="badge bg-secondary p-2">
+                        <i class="bi bi-book me-1"></i> Courses: <?php echo number_format($stats['total_courses'] ?? 0); ?>
+                    </span>
+                    <span class="badge bg-dark p-2">
+                        <i class="bi bi-collection me-1"></i> Batches: <?php echo number_format($stats['total_batches'] ?? 0); ?>
                     </span>
                 </div>
             </div>
@@ -767,9 +1002,12 @@ $stats = $statsStmt->fetch();
                                     $badgeClass = 'secondary';
                                     $icon = 'info-circle';
                                     
-                                    if (strpos($actionLower, 'approve') !== false || strpos($actionLower, 'approved') !== false) {
+                                    if (strpos($actionLower, 'approve') !== false) {
                                         $badgeClass = 'success';
                                         $icon = 'check-circle';
+                                    } elseif (strpos($actionLower, 'reject') !== false) {
+                                        $badgeClass = 'danger';
+                                        $icon = 'x-circle';
                                     } elseif (strpos($actionLower, 'create') !== false || strpos($actionLower, 'registered') !== false) {
                                         $badgeClass = 'primary';
                                         $icon = 'plus-circle';
@@ -782,6 +1020,15 @@ $stats = $statsStmt->fetch();
                                     } elseif (strpos($actionLower, 'queue') !== false) {
                                         $badgeClass = 'warning';
                                         $icon = 'hourglass-split';
+                                    } elseif (strpos($actionLower, 'document') !== false) {
+                                        $badgeClass = 'primary';
+                                        $icon = 'file-earmark-text';
+                                    } elseif (strpos($actionLower, 'course') !== false) {
+                                        $badgeClass = 'info';
+                                        $icon = 'book';
+                                    } elseif (strpos($actionLower, 'batch') !== false) {
+                                        $badgeClass = 'secondary';
+                                        $icon = 'collection';
                                     }
                                     
                                     // Determine target display
@@ -808,23 +1055,26 @@ $stats = $statsStmt->fetch();
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="admin-badge me-2">
-                                                <i class="bi bi-shield-fill-check text-danger"></i>
+                                                <?php if($log['AdminName']): ?>
+                                                    <i class="bi bi-shield-fill-check text-danger"></i>
+                                                <?php else: ?>
+                                                    <i class="bi bi-person-fill text-primary"></i>
+                                                <?php endif; ?>
                                             </div>
                                             <div>
                                                 <div class="fw-semibold">
                                                     <?php 
                                                     if ($log['AdminName']) {
                                                         echo htmlspecialchars($log['AdminName']);
+                                                        echo ' <small class="text-muted">(Admin)</small>';
                                                     } elseif ($log['StudentFirstName']) {
                                                         echo htmlspecialchars($log['StudentFirstName'] . ' ' . $log['StudentLastName']);
+                                                        echo ' <small class="text-muted">(Student)</small>';
                                                     } else {
                                                         echo 'System';
                                                     }
                                                     ?>
                                                 </div>
-                                                <?php if($log['AdminName']): ?>
-                                                <small class="text-muted"><?php echo htmlspecialchars($log['AdminName']); ?></small>
-                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
@@ -841,7 +1091,7 @@ $stats = $statsStmt->fetch();
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-info" onclick='viewLogDetails(<?php echo json_encode($log); ?>)'>
+                                        <button class="btn btn-sm btn-outline-info view-log-details" data-log='<?php echo json_encode($log); ?>'>
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </td>
@@ -927,36 +1177,205 @@ $stats = $statsStmt->fetch();
 </div>
 
 <script>
-// Auto-submit form when filters change
-document.getElementById('adminFilter').addEventListener('change', function() {
-    document.getElementById('pageInput').value = '1';
-    document.getElementById('filterForm').submit();
-});
+// Global variable for refresh interval
+let autoRefreshInterval = null;
 
-document.getElementById('logTypeFilter').addEventListener('change', function() {
-    document.getElementById('pageInput').value = '1';
-    document.getElementById('filterForm').submit();
-});
+// View log details function
+function viewLogDetails(log) {
+    try {
+        // Parse log if it's a string
+        if (typeof log === 'string') {
+            log = JSON.parse(log);
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+        const modalBody = document.getElementById('logDetailsContent');
+        
+        let html = `
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Log ID</label>
+                    <p class="fw-semibold">#${log.Id || 'N/A'}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Timestamp</label>
+                    <p class="fw-semibold">${log.CreatedAt ? new Date(log.CreatedAt).toLocaleString() : 'N/A'}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">User Type</label>
+                    <p class="fw-semibold">${log.AdminName ? 'Admin' : (log.StudentFirstName ? 'Student' : 'System')}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">${log.AdminName ? 'Admin Name' : (log.StudentFirstName ? 'Student Name' : 'User')}</label>
+                    <p class="fw-semibold">${log.AdminName || (log.StudentFirstName ? log.StudentFirstName + ' ' + (log.StudentLastName || '') : 'System')}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Action Type</label>
+                    <p><span class="badge bg-${log.Status || 'secondary'}">${log.Action || 'N/A'}</span></p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Category</label>
+                    <p><span class="badge bg-${log.Status || 'secondary'}">${log.Category || 'N/A'}</span></p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Status</label>
+                    <p><span class="badge bg-${log.Status == 'danger' ? 'danger' : (log.Status == 'warning' ? 'warning' : (log.Status == 'success' ? 'success' : 'secondary'))}">${log.Status || 'N/A'}</span></p>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="text-muted small">Description</label>
+                    <p class="fw-semibold">${log.Description || 'No description'}</p>
+                </div>
+        `;
+        
+        if (log.StudentFirstName || log.StudentLastName) {
+            html += `
+                <div class="col-12 mb-3">
+                    <label class="text-muted small">Target Student</label>
+                    <p>${log.StudentFirstName || ''} ${log.StudentLastName || ''} ${log.StudentEmail ? '(' + log.StudentEmail + ')' : ''}</p>
+                </div>
+            `;
+        }
+        
+        html += `
+                <div class="col-12 mb-3">
+                    <label class="text-muted small">Additional Details</label>
+                    <div class="bg-light p-3 rounded">
+                        <pre class="mb-0"><code>${JSON.stringify({
+                            id: log.Id,
+                            type: log.LogType,
+                            target_id: log.TargetId,
+                            status: log.StudentStatus || log.Status
+                        }, null, 2)}</code></pre>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modalBody.innerHTML = html;
+        modal.show();
+    } catch (error) {
+        console.error('Error viewing log details:', error);
+        alert('Could not load log details. Please try again.');
+    }
+}
 
-document.getElementById('dateFilter').addEventListener('change', function() {
-    document.getElementById('pageInput').value = '1';
-    document.getElementById('filterForm').submit();
-});
+// Initialize all event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach click handlers to all view details buttons
+    const viewButtons = document.querySelectorAll('.view-log-details');
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const logData = this.getAttribute('data-log');
+            if (logData) {
+                try {
+                    const log = JSON.parse(logData);
+                    viewLogDetails(log);
+                } catch (e) {
+                    console.error('Error parsing log data:', e);
+                }
+            }
+        });
+    });
 
-// Search with debounce
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        document.getElementById('pageInput').value = '1';
-        document.getElementById('filterForm').submit();
-    }, 500);
+    // Admin filter change
+    const adminFilter = document.getElementById('adminFilter');
+    if (adminFilter) {
+        adminFilter.addEventListener('change', function() {
+            document.getElementById('pageInput').value = '1';
+            document.getElementById('filterForm').submit();
+        });
+    }
+
+    // Log type filter change
+    const logTypeFilter = document.getElementById('logTypeFilter');
+    if (logTypeFilter) {
+        logTypeFilter.addEventListener('change', function() {
+            document.getElementById('pageInput').value = '1';
+            document.getElementById('filterForm').submit();
+        });
+    }
+
+    // Date filter change
+    const dateFilter = document.getElementById('dateFilter');
+    if (dateFilter) {
+        dateFilter.addEventListener('change', function() {
+            document.getElementById('pageInput').value = '1';
+            document.getElementById('filterForm').submit();
+        });
+    }
+
+    // Search with debounce
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('pageInput').value = '1';
+                document.getElementById('filterForm').submit();
+            } else {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    document.getElementById('pageInput').value = '1';
+                    document.getElementById('filterForm').submit();
+                }, 1000);
+            }
+        });
+    }
+
+    // Action filter with debounce
+    const actionFilter = document.getElementById('actionFilter');
+    if (actionFilter) {
+        let actionTimeout;
+        actionFilter.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('pageInput').value = '1';
+                document.getElementById('filterForm').submit();
+            } else {
+                clearTimeout(actionTimeout);
+                actionTimeout = setTimeout(() => {
+                    document.getElementById('pageInput').value = '1';
+                    document.getElementById('filterForm').submit();
+                }, 1000);
+            }
+        });
+    }
+
+    // Setup auto-refresh for recent view
+    <?php if($viewMode == 'recent'): ?>
+    // Clear any existing interval
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // Set up new interval
+    autoRefreshInterval = setInterval(function() {
+        if (!document.hidden) {
+            refreshLogs();
+        }
+    }, 60000);
+    <?php endif; ?>
 });
 
 // Reset filters
-document.getElementById('resetFilters').addEventListener('click', function() {
+function resetFilters() {
     window.location.href = 'logs.php?view=<?php echo $viewMode; ?>';
-});
+}
+
+// Remove specific filter
+function removeFilter(filter) {
+    let url = new URL(window.location.href);
+    url.searchParams.delete(filter);
+    if (filter === 'search') {
+        url.searchParams.delete('search');
+    }
+    url.searchParams.set('page', '1');
+    window.location.href = url.href;
+}
+
+// Reset all filters
+function resetAllFilters() {
+    window.location.href = 'logs.php?view=<?php echo $viewMode; ?>';
+}
 
 // Change page
 function changePage(page) {
@@ -976,92 +1395,12 @@ function refreshLogs() {
     location.reload();
 }
 
-// View log details
-function viewLogDetails(log) {
-    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
-    const modalBody = document.getElementById('logDetailsContent');
-    
-    let html = `
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">Log ID</label>
-                <p class="fw-semibold">#${log.Id}</p>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">Timestamp</label>
-                <p class="fw-semibold">${new Date(log.CreatedAt).toLocaleString()}</p>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">${log.AdminName ? 'Admin' : 'User'}</label>
-                <p class="fw-semibold">${log.AdminName || (log.StudentFirstName + ' ' + log.StudentLastName) || 'System'}</p>
-                ${log.AdminName ? '<small class="text-muted">' + log.AdminName + '</small>' : ''}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">Action Type</label>
-                <p><span class="badge bg-${log.Status}">${log.Action}</span></p>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">Category</label>
-                <p><span class="badge bg-${log.Status}">${log.Category}</span></p>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="text-muted small">Status</label>
-                <p><span class="badge bg-${log.Status == 'danger' ? 'danger' : (log.Status == 'warning' ? 'warning' : (log.Status == 'success' ? 'success' : 'secondary'))}">${log.Status}</span></p>
-            </div>
-            <div class="col-12 mb-3">
-                <label class="text-muted small">Description</label>
-                <p class="fw-semibold">${log.Description}</p>
-            </div>
-    `;
-    
-    if (log.StudentFirstName || log.StudentLastName) {
-        html += `
-            <div class="col-12 mb-3">
-                <label class="text-muted small">Target Student</label>
-                <p>${log.StudentFirstName || ''} ${log.StudentLastName || ''} (${log.StudentEmail || 'No email'})</p>
-            </div>
-        `;
-    }
-    
-    html += `
-            <div class="col-12 mb-3">
-                <label class="text-muted small">Additional Details</label>
-                <div class="bg-light p-3 rounded">
-                    <pre class="mb-0"><code>${JSON.stringify({
-                        id: log.Id,
-                        type: log.LogType,
-                        target_id: log.TargetId,
-                        status: log.StudentStatus || log.Status
-                    }, null, 2)}</code></pre>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    modalBody.innerHTML = html;
-    modal.show();
-}
-
-// Export logs
-function exportLogs() {
-    const params = new URLSearchParams(window.location.search);
-    params.append('export', 'excel');
-    window.location.href = 'export_logs.php?' + params.toString();
-}
-
-// Auto-refresh every 60 seconds for real-time updates
-<?php if($viewMode == 'recent'): ?>
-let refreshInterval = setInterval(function() {
-    if (!document.hidden) {
-        refreshLogs();
-    }
-}, 60000);
-
 // Clear interval when navigating away
 window.addEventListener('beforeunload', function() {
-    clearInterval(refreshInterval);
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
 });
-<?php endif; ?>
 </script>
 
 <?php

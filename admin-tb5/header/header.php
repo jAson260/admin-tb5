@@ -1,5 +1,203 @@
 <?php
 // filepath: c:\laragon\www\admin-tb5\admin-tb5\header\header.php
+// Start session if not started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Include database connection for notifications
+require_once('../../db-connect.php');
+
+// Function to get unread notification count
+function getUnreadNotificationCount($pdo) {
+    // You can store read notifications in session or database
+    // For now, we'll use a simple session-based approach
+    $readNotifications = isset($_SESSION['read_notifications']) ? $_SESSION['read_notifications'] : [];
+    
+    // Get recent logs (last 7 days) that qualify as notifications
+    $query = "
+        SELECT COUNT(*) as total FROM (
+            -- Student pending registrations
+            SELECT 
+                CONCAT('PENDING_', Id) as notification_id,
+                'pending' as type
+            FROM studentinfos 
+            WHERE Status = 'Pending'
+            
+            UNION ALL
+            
+            -- Recent student approvals (last 7 days)
+            SELECT 
+                CONCAT('APPROVED_', Id) as notification_id,
+                'approved' as type
+            FROM studentinfos 
+            WHERE Status = 'Approved' 
+            AND UpdatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            
+            UNION ALL
+            
+            -- Recent student rejections (last 7 days)
+            SELECT 
+                CONCAT('REJECTED_', Id) as notification_id,
+                'rejected' as type
+            FROM studentinfos 
+            WHERE Status = 'Rejected' 
+            AND UpdatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            
+            UNION ALL
+            
+            -- Recent document approvals (last 7 days)
+            SELECT 
+                CONCAT('DOC_', StudentInfoId) as notification_id,
+                'document' as type
+            FROM document_approvals 
+            WHERE ApprovedDate IS NOT NULL 
+            AND ApprovedDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            
+            UNION ALL
+            
+            -- Recent admin logins (last 24 hours)
+            SELECT 
+                CONCAT('LOGIN_', Id) as notification_id,
+                'login' as type
+            FROM admins 
+            WHERE LastLogin >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        ) as notifications
+    ";
+    
+    $stmt = $pdo->query($query);
+    $totalNotifications = $stmt->fetch()['total'];
+    
+    // Subtract read notifications
+    $unreadCount = $totalNotifications - count($readNotifications);
+    return max(0, $unreadCount);
+}
+
+// Function to get notifications
+function getNotifications($pdo, $limit = 10) {
+    $readNotifications = isset($_SESSION['read_notifications']) ? $_SESSION['read_notifications'] : [];
+    
+    $query = "
+        SELECT * FROM (
+            -- Student pending registrations
+            SELECT 
+                CONCAT('PENDING_', Id) as notification_id,
+                'student_pending' as type,
+                Id as target_id,
+                'Student in Queue' as title,
+                CONCAT(FirstName, ' ', LastName, ' is waiting for approval') as message,
+                EntryDate as created_at,
+                'warning' as status,
+                FirstName as student_first,
+                LastName as student_last,
+                Email as student_email,
+                NULL as admin_name
+            FROM studentinfos 
+            WHERE Status = 'Pending'
+            
+            UNION ALL
+            
+            -- Recent student approvals
+            SELECT 
+                CONCAT('APPROVED_', Id) as notification_id,
+                'student_approved' as type,
+                Id as target_id,
+                'Student Approved' as title,
+                CONCAT(FirstName, ' ', LastName, ' has been approved') as message,
+                UpdatedAt as created_at,
+                'success' as status,
+                FirstName as student_first,
+                LastName as student_last,
+                Email as student_email,
+                NULL as admin_name
+            FROM studentinfos 
+            WHERE Status = 'Approved' 
+            AND UpdatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            
+            UNION ALL
+            
+            -- Recent student rejections
+            SELECT 
+                CONCAT('REJECTED_', Id) as notification_id,
+                'student_rejected' as type,
+                Id as target_id,
+                'Student Rejected' as title,
+                CONCAT(FirstName, ' ', LastName, ' has been rejected') as message,
+                UpdatedAt as created_at,
+                'danger' as status,
+                FirstName as student_first,
+                LastName as student_last,
+                Email as student_email,
+                NULL as admin_name
+            FROM studentinfos 
+            WHERE Status = 'Rejected' 
+            AND UpdatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            
+            UNION ALL
+            
+            -- Recent document approvals
+            SELECT 
+                CONCAT('DOC_', da.StudentInfoId) as notification_id,
+                'document_approved' as type,
+                da.StudentInfoId as target_id,
+                'Document Approved' as title,
+                CONCAT(
+                    CASE 
+                        WHEN da.PSAApproved = 1 THEN 'PSA Birth Certificate'
+                        WHEN da.TORApproved = 1 THEN 'TOR'
+                        WHEN da.DiplomaApproved = 1 THEN 'Diploma'
+                        WHEN da.MarriageApproved = 1 THEN 'Marriage Certificate'
+                    END,
+                    ' approved for ', s.FirstName, ' ', s.LastName
+                ) as message,
+                da.ApprovedDate as created_at,
+                'info' as status,
+                s.FirstName as student_first,
+                s.LastName as student_last,
+                s.Email as student_email,
+                da.ApprovedBy as admin_name
+            FROM document_approvals da
+            INNER JOIN studentinfos s ON da.StudentInfoId = s.Id
+            WHERE da.ApprovedDate IS NOT NULL 
+            AND da.ApprovedDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            AND (da.PSAApproved = 1 OR da.TORApproved = 1 OR da.DiplomaApproved = 1 OR da.MarriageApproved = 1)
+            
+            UNION ALL
+            
+            -- Recent admin logins
+            SELECT 
+                CONCAT('LOGIN_', Id) as notification_id,
+                'admin_login' as type,
+                Id as target_id,
+                'Admin Login' as title,
+                CONCAT(Username, ' logged in') as message,
+                LastLogin as created_at,
+                'primary' as status,
+                NULL as student_first,
+                NULL as student_last,
+                NULL as student_email,
+                Username as admin_name
+            FROM admins 
+            WHERE LastLogin >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        ) as combined
+        ORDER BY created_at DESC
+        LIMIT $limit
+    ";
+    
+    $stmt = $pdo->query($query);
+    $notifications = $stmt->fetchAll();
+    
+    // Mark as read/unread
+    foreach ($notifications as &$notif) {
+        $notif['is_read'] = in_array($notif['notification_id'], $readNotifications);
+    }
+    
+    return $notifications;
+}
+
+// Get notifications for display
+$notifications = getNotifications($pdo);
+$unreadCount = getUnreadNotificationCount($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -110,11 +308,11 @@
         }
         
         .notification-dropdown .dropdown-menu {
-            min-width: 350px;
-            max-width: 400px;
+            width: 380px;
             max-height: 500px;
             overflow-y: auto;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 0;
         }
         
         .notification-header {
@@ -140,10 +338,24 @@
             color: var(--primary-blue);
             cursor: pointer;
             text-decoration: none;
+            background: none;
+            border: none;
+            padding: 0;
         }
         
         .mark-all-read:hover {
             text-decoration: underline;
+        }
+        
+        .mark-all-read:disabled {
+            color: #6c757d;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+        
+        .notification-list {
+            max-height: 400px;
+            overflow-y: auto;
         }
         
         .notification-item {
@@ -151,6 +363,9 @@
             border-bottom: 1px solid #f0f0f0;
             transition: background 0.2s;
             cursor: pointer;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
         }
         
         .notification-item:hover {
@@ -166,34 +381,39 @@
         }
         
         .notification-icon {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1rem;
             flex-shrink: 0;
-        }
-        
-        .notification-icon.info {
-            background: #cfe2ff;
-            color: #0d6efd;
-        }
-        
-        .notification-icon.success {
-            background: #d1e7dd;
-            color: #198754;
         }
         
         .notification-icon.warning {
             background: #fff3cd;
-            color: #ffc107;
+            color: #856404;
+        }
+        
+        .notification-icon.success {
+            background: #d4edda;
+            color: #155724;
         }
         
         .notification-icon.danger {
             background: #f8d7da;
-            color: #dc3545;
+            color: #721c24;
+        }
+        
+        .notification-icon.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .notification-icon.primary {
+            background: #cfe2ff;
+            color: #084298;
         }
         
         .notification-content {
@@ -204,8 +424,17 @@
         .notification-title {
             font-weight: 600;
             font-size: 0.9rem;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-title .time {
+            font-size: 0.7rem;
+            color: #6c757d;
+            font-weight: normal;
         }
         
         .notification-text {
@@ -215,11 +444,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-        
-        .notification-time {
-            font-size: 0.75rem;
-            color: #adb5bd;
         }
         
         .notification-footer {
@@ -287,21 +511,40 @@
         }
         
         /* Custom scrollbar for notification dropdown */
-        .notification-dropdown .dropdown-menu::-webkit-scrollbar {
+        .notification-list::-webkit-scrollbar {
             width: 6px;
         }
         
-        .notification-dropdown .dropdown-menu::-webkit-scrollbar-track {
+        .notification-list::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
         
-        .notification-dropdown .dropdown-menu::-webkit-scrollbar-thumb {
+        .notification-list::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 3px;
         }
         
-        .notification-dropdown .dropdown-menu::-webkit-scrollbar-thumb:hover {
+        .notification-list::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        
+        .read-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            margin-left: 8px;
+        }
+        
+        .notification-loader {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
         }
     </style>
 
@@ -340,70 +583,90 @@
         <div class="header-right">
             <!-- Notification Dropdown -->
             <div class="dropdown notification-dropdown">
-                <div class="header-icon" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="header-icon" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBell">
                     <i class="bi bi-bell-fill"></i>
-                    <span class="notification-badge" id="notificationCount">3</span>
+                    <span class="notification-badge" id="notificationCount" <?php echo $unreadCount > 0 ? '' : 'style="display:none;"'; ?>><?php echo $unreadCount; ?></span>
                 </div>
-                <ul class="dropdown-menu dropdown-menu-end">
+                <div class="dropdown-menu dropdown-menu-end" id="notificationDropdown">
                     <!-- Notification Header -->
                     <div class="notification-header">
                         <h6>Notifications</h6>
-                        <a href="#" class="mark-all-read" onclick="markAllAsRead(event)">Mark all as read</a>
+                        <button class="mark-all-read" onclick="markAllAsRead(event)" <?php echo $unreadCount > 0 ? '' : 'disabled'; ?> id="markAllReadBtn">
+                            Mark all as read
+                        </button>
                     </div>
                     
                     <!-- Notification List -->
-                    <div id="notificationList">
-                        <!-- Sample notifications - Replace with dynamic content -->
-                        <div class="notification-item unread d-flex gap-3" onclick="markAsRead(this, 1)">
-                            <div class="notification-icon success">
-                                <i class="bi bi-check-circle-fill"></i>
+                    <div class="notification-list" id="notificationList">
+                        <?php if (count($notifications) > 0): ?>
+                            <?php foreach($notifications as $notif): 
+                                $icon = 'bell';
+                                $statusClass = $notif['status'];
+                                
+                                switch($notif['type']) {
+                                    case 'student_pending':
+                                        $icon = 'hourglass-split';
+                                        break;
+                                    case 'student_approved':
+                                        $icon = 'check-circle';
+                                        break;
+                                    case 'student_rejected':
+                                        $icon = 'x-circle';
+                                        break;
+                                    case 'document_approved':
+                                        $icon = 'file-earmark-check';
+                                        break;
+                                    case 'admin_login':
+                                        $icon = 'box-arrow-in-right';
+                                        break;
+                                }
+                                
+                                $timeAgo = '';
+                                $created = new DateTime($notif['created_at']);
+                                $now = new DateTime();
+                                $diff = $now->diff($created);
+                                
+                                if ($diff->d > 0) {
+                                    $timeAgo = $diff->d . ' day' . ($diff->d > 1 ? 's' : '') . ' ago';
+                                } elseif ($diff->h > 0) {
+                                    $timeAgo = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
+                                } elseif ($diff->i > 0) {
+                                    $timeAgo = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '') . ' ago';
+                                } else {
+                                    $timeAgo = 'just now';
+                                }
+                            ?>
+                            <div class="notification-item <?php echo $notif['is_read'] ? '' : 'unread'; ?>" 
+                                 data-notification-id="<?php echo $notif['notification_id']; ?>"
+                                 onclick="markAsRead('<?php echo $notif['notification_id']; ?>', this)">
+                                <div class="notification-icon <?php echo $statusClass; ?>">
+                                    <i class="bi bi-<?php echo $icon; ?>"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <div class="notification-title">
+                                        <?php echo htmlspecialchars($notif['title']); ?>
+                                        <span class="time"><?php echo $timeAgo; ?></span>
+                                    </div>
+                                    <div class="notification-text">
+                                        <?php echo htmlspecialchars($notif['message']); ?>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="notification-content">
-                                <div class="notification-title">New Student Registered</div>
-                                <div class="notification-text">John Doe has registered for Basic Safety Training</div>
-                                <div class="notification-time">2 minutes ago</div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="no-notifications">
+                                <i class="bi bi-bell-slash"></i>
+                                <p>No notifications</p>
+                                <small class="text-muted">You're all caught up!</small>
                             </div>
-                        </div>
-                        
-                        <div class="notification-item unread d-flex gap-3" onclick="markAsRead(this, 2)">
-                            <div class="notification-icon info">
-                                <i class="bi bi-info-circle-fill"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Course Update</div>
-                                <div class="notification-text">Maritime Safety course materials have been updated</div>
-                                <div class="notification-time">1 hour ago</div>
-                            </div>
-                        </div>
-                        
-                        <div class="notification-item unread d-flex gap-3" onclick="markAsRead(this, 3)">
-                            <div class="notification-icon warning">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Pending Approval</div>
-                                <div class="notification-text">3 students are waiting for account approval</div>
-                                <div class="notification-time">3 hours ago</div>
-                            </div>
-                        </div>
-                        
-                        <div class="notification-item d-flex gap-3" onclick="markAsRead(this, 4)">
-                            <div class="notification-icon danger">
-                                <i class="bi bi-x-circle-fill"></i>
-                            </div>
-                            <div class="notification-content">
-                                <div class="notification-title">Certificate Expiring</div>
-                                <div class="notification-text">5 certificates will expire in 30 days</div>
-                                <div class="notification-time">1 day ago</div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <!-- Notification Footer -->
                     <div class="notification-footer">
-                        <a href="../notifications/notifications.php">View all notifications</a>
+                        <a href="../logs/logs.php">View all activity logs</a>
                     </div>
-                </ul>
+                </div>
             </div>
             
             <!-- User Dropdown -->
@@ -429,63 +692,195 @@
     </header>
 
     <script>
-        // Mark individual notification as read
-        function markAsRead(element, notificationId) {
-            if (element.classList.contains('unread')) {
-                element.classList.remove('unread');
-                updateNotificationCount();
-                
-                // TODO: Send AJAX request to mark notification as read in database
-                // Example:
-                // fetch('../api/mark-notification-read.php', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify({ id: notificationId })
-                // });
+        // Mark notification as read
+        function markAsRead(notificationId, element) {
+            if (!element.classList.contains('unread')) {
+                return;
             }
+            
+            // Send AJAX request to mark as read
+            fetch('../notifications/mark-read.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    notification_id: notificationId,
+                    mark_single: true 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    element.classList.remove('unread');
+                    updateNotificationCount();
+                    
+                    // Disable mark all button if no unread
+                    if (data.unread_count === 0) {
+                        document.getElementById('markAllReadBtn').disabled = true;
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
         
         // Mark all notifications as read
         function markAllAsRead(event) {
             event.preventDefault();
-            const unreadNotifications = document.querySelectorAll('.notification-item.unread');
-            unreadNotifications.forEach(item => {
-                item.classList.remove('unread');
-            });
-            updateNotificationCount();
             
-            // TODO: Send AJAX request to mark all as read
-            // fetch('../api/mark-all-notifications-read.php', { method: 'POST' });
+            // Send AJAX request to mark all as read
+            fetch('../notifications/mark-read.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ mark_all: true })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove unread class from all notifications
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                    
+                    // Hide notification badge
+                    document.getElementById('notificationCount').style.display = 'none';
+                    
+                    // Disable mark all button
+                    document.getElementById('markAllReadBtn').disabled = true;
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
         
         // Update notification count badge
         function updateNotificationCount() {
             const unreadCount = document.querySelectorAll('.notification-item.unread').length;
             const badge = document.getElementById('notificationCount');
+            const markAllBtn = document.getElementById('markAllReadBtn');
             
             if (unreadCount > 0) {
                 badge.textContent = unreadCount;
                 badge.style.display = 'flex';
+                markAllBtn.disabled = false;
             } else {
                 badge.style.display = 'none';
+                markAllBtn.disabled = true;
             }
         }
         
-        // Initialize notification count on page load
+        // Fetch new notifications
+        function fetchNewNotifications() {
+            fetch('/admin-tb5/notifications/fetch-notifications.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_new) {
+                        updateNotificationList(data.notifications);
+                        updateNotificationCount();
+                        
+                        // Show browser notification if supported and page is not visible
+                        if (!document.hasFocus() && 'Notification' in window && Notification.permission === 'granted') {
+                            new Notification('New Notification', {
+                                body: 'You have new notifications',
+                                icon: '../assets/img/favicon.ico'
+                            });
+                        }
+                    }
+                    
+                    // Update badge count
+                    if (data.unread_count > 0) {
+                        document.getElementById('notificationCount').textContent = data.unread_count;
+                        document.getElementById('notificationCount').style.display = 'flex';
+                    }
+                })
+                .catch(error => console.error('Error fetching notifications:', error));
+        }
+        
+        // Update notification list HTML
+        function updateNotificationList(notifications) {
+            const list = document.getElementById('notificationList');
+            
+            if (notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="no-notifications">
+                        <i class="bi bi-bell-slash"></i>
+                        <p>No notifications</p>
+                        <small class="text-muted">You're all caught up!</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            notifications.forEach(notif => {
+                const isUnread = notif.is_read ? '' : 'unread';
+                const timeAgo = getTimeAgo(notif.created_at);
+                
+                html += `
+                    <div class="notification-item ${isUnread}" 
+                         data-notification-id="${notif.notification_id}"
+                         onclick="markAsRead('${notif.notification_id}', this)">
+                        <div class="notification-icon ${notif.status}">
+                            <i class="bi bi-${notif.icon}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">
+                                ${escapeHtml(notif.title)}
+                                <span class="time">${timeAgo}</span>
+                            </div>
+                            <div class="notification-text">
+                                ${escapeHtml(notif.message)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            list.innerHTML = html;
+        }
+        
+        // Helper function to get time ago string
+        function getTimeAgo(datetime) {
+            const now = new Date();
+            const created = new Date(datetime);
+            const diff = Math.floor((now - created) / 1000); // seconds
+            
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return Math.floor(diff / 60) + ' minutes ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' hours ago';
+            return Math.floor(diff / 86400) + ' days ago';
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Request notification permission on page load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateNotificationCount();
         });
         
-        // Optional: Auto-refresh notifications every 30 seconds
-        // setInterval(function() {
-        //     fetch('../api/get-notifications.php')
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             // Update notification list
-        //             updateNotificationList(data);
-        //             updateNotificationCount();
-        //         });
-        // }, 30000);
+        // Auto-refresh notifications every 30 seconds
+        let refreshInterval = setInterval(fetchNewNotifications, 30000);
+        
+        // Clear interval when navigating away
+        window.addEventListener('beforeunload', function() {
+            clearInterval(refreshInterval);
+        });
+        
+        // Refresh notifications when dropdown is opened
+        document.getElementById('notificationBell').addEventListener('click', function() {
+            fetchNewNotifications();
+        });
     </script>
 </body>
 </html>
