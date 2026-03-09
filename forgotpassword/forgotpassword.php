@@ -92,4 +92,3 @@ include '../includes/header.php';
     });
 </script>
 
-<?php include '../includes/footer.php'; ?>
