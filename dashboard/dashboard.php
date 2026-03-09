@@ -22,9 +22,13 @@ $trainee_name = "TRAINEE";
 $account_status = "Pending";
 $current_course = "No Active Course";
 $course_code = "";
+$school = "";
+$batch_name = "";
+$batch_code = "";
+$enrollment_status = "";
 $enrollment_progress = 0;
 $docs_uploaded = 0;
-$docs_needed = 4; // PSA, TOR, Diploma, Form137 only
+$docs_needed = 4;
 
 try {
     // Get user info
@@ -46,45 +50,43 @@ try {
         $account_status = $userData['Status'];
     }
 
-    // Get active course from enrollment_status -> courses
+    // UPDATED: Get enrolled course from enrollments table
     $courseStmt = $pdo->prepare("
         SELECT 
             c.CourseName,
             c.CourseCode,
-            es.Status
-        FROM enrollment_status es
-        INNER JOIN courses c ON es.CourseId = c.Id
-        WHERE es.StudentInfoId = ?
-        ORDER BY es.Id DESC
+            c.Duration,
+            c.DurationHours,
+            b.BatchName,
+            b.BatchCode,
+            b.StartDate,
+            b.EndDate,
+            e.School,
+            e.Status        AS EnrollmentStatus,
+            e.EnrolledAt
+        FROM enrollments e
+        INNER JOIN courses c ON e.CourseId = c.Id
+        INNER JOIN batches b ON e.BatchId = b.Id
+        WHERE e.StudentId = ?
+        ORDER BY e.EnrolledAt DESC
         LIMIT 1
     ");
     $courseStmt->execute([$_SESSION['user_id']]);
     $courseData = $courseStmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if ($courseData) {
-        $current_course = strtoupper($courseData['CourseName']);
-        $course_code = $courseData['CourseCode'];
-    } else {
-        // Fallback: Check qualificationenrollments table
-        $qualStmt = $pdo->prepare("
-            SELECT 
-                q.QualificationType AS CourseName,
-                qe.Status
-            FROM qualificationenrollments qe
-            INNER JOIN qualifications q ON qe.QualificationId = q.Id
-            WHERE qe.StudentInfoId = ?
-            ORDER BY qe.EnrollmentDate DESC
-            LIMIT 1
-        ");
-        $qualStmt->execute([$_SESSION['user_id']]);
-        $qualData = $qualStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($qualData) {
-            $current_course = strtoupper($qualData['CourseName']);
-        }
+        $current_course     = strtoupper($courseData['CourseName']);
+        $course_code        = $courseData['CourseCode'];
+        $batch_name         = $courseData['BatchName'];
+        $batch_code         = $courseData['BatchCode'];
+        $school             = $courseData['School'];
+        $enrollment_status  = $courseData['EnrollmentStatus'];
+        $start_date         = $courseData['StartDate'] ? date('M d, Y', strtotime($courseData['StartDate'])) : 'TBA';
+        $end_date           = $courseData['EndDate']   ? date('M d, Y', strtotime($courseData['EndDate']))   : 'TBA';
+        $enrolled_at        = $courseData['EnrolledAt'] ? date('M d, Y', strtotime($courseData['EnrolledAt'])) : 'N/A';
     }
 
-    // Count uploaded documents - only 4 required documents
+    // Count uploaded documents
     $docsStmt = $pdo->prepare("
         SELECT 
             (CASE WHEN PSAPath IS NOT NULL AND PSAPath != '' THEN 1 ELSE 0 END) +
@@ -103,12 +105,11 @@ try {
         $docs_uploaded = (int)$docsData['uploaded_count'];
     }
 
-    // Calculate enrollment progress based on docs
+    // Calculate enrollment progress
     if ($docs_needed > 0) {
         $enrollment_progress = round(($docs_uploaded / $docs_needed) * 100);
     }
 
-    // Bonus progress if account is approved
     if ($account_status === 'Approved') {
         $enrollment_progress = min(100, $enrollment_progress + 20);
     }
@@ -171,12 +172,68 @@ try {
                 <div class="card status-widget shadow-sm h-100 p-3">
                     <div class="card-body">
                         <h6 class="text-muted fw-bold small text-uppercase">Active Qualification</h6>
-                        <h4 class="fw-bold text-dark mt-2 mb-3">
-                            <?php echo htmlspecialchars($current_course); ?>
-                            <?php if ($course_code): ?>
-                                <span class="badge bg-royal ms-2"><?php echo htmlspecialchars($course_code); ?></span>
+
+                        <?php if ($current_course !== 'No Active Course'): ?>
+                            <h4 class="fw-bold text-dark mt-2 mb-1">
+                                <?php echo htmlspecialchars($current_course); ?>
+                            </h4>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <?php if ($course_code): ?>
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-book me-1"></i><?php echo htmlspecialchars($course_code); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if ($school): ?>
+                                    <span class="badge <?php echo $school === 'TB5' ? 'bg-info' : 'bg-warning'; ?>">
+                                        <i class="bi bi-bank me-1"></i><?php echo htmlspecialchars($school); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if ($enrollment_status): ?>
+                                    <?php
+                                        $statusColor = match($enrollment_status) {
+                                            'Enrolled'  => 'bg-success',
+                                            'Ongoing'   => 'bg-primary',
+                                            'Completed' => 'bg-success',
+                                            'Dropped'   => 'bg-danger',
+                                            'Failed'    => 'bg-danger',
+                                            default     => 'bg-secondary'
+                                        };
+                                    ?>
+                                    <span class="badge <?php echo $statusColor; ?>">
+                                        <i class="bi bi-circle-fill me-1" style="font-size:0.5rem;"></i><?php echo htmlspecialchars($enrollment_status); ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Batch Info -->
+                            <?php if ($batch_name): ?>
+                                <div class="card bg-light border-0 mb-3 p-2">
+                                    <div class="row g-2 small">
+                                        <div class="col-6">
+                                            <span class="text-muted">Batch</span><br>
+                                            <strong><?php echo htmlspecialchars($batch_code); ?> - <?php echo htmlspecialchars($batch_name); ?></strong>
+                                        </div>
+                                        <div class="col-3">
+                                            <span class="text-muted">Start</span><br>
+                                            <strong><?php echo $start_date; ?></strong>
+                                        </div>
+                                        <div class="col-3">
+                                            <span class="text-muted">End</span><br>
+                                            <strong><?php echo $end_date; ?></strong>
+                                        </div>
+                                    </div>
+                                </div>
                             <?php endif; ?>
-                        </h4>
+
+                        <?php else: ?>
+                            <div class="text-center py-3">
+                                <i class="bi bi-journal-x text-muted" style="font-size:2.5rem;"></i>
+                                <p class="text-muted mt-2 mb-0">No active course enrollment</p>
+                                <small class="text-muted">Please wait for admin to assign you a course</small>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Progress Bar -->
                         <div class="d-flex align-items-center mb-1">
                             <span class="small fw-bold text-royal">Enrollment Progress</span>
                             <span class="ms-auto small fw-bold text-royal"><?php echo $enrollment_progress; ?>%</span>
@@ -185,10 +242,10 @@ try {
                             <div class="progress-bar bg-royal" role="progressbar" style="width: <?php echo $enrollment_progress; ?>%"></div>
                         </div>
                         <?php if ($enrollment_progress == 100): ?>
-                            <small class="text-success mt-2 d-block"><i class="fas fa-check-circle me-1"></i>All requirements completed!</small>
+                            <small class="text-success mt-2 d-block"><i class="bi bi-check-circle me-1"></i>All requirements completed!</small>
                         <?php else: ?>
                             <small class="text-muted mt-2 d-block">
-                                <i class="fas fa-info-circle me-1"></i>
+                                <i class="bi bi-info-circle me-1"></i>
                                 <?php echo ($docs_needed - $docs_uploaded); ?> document(s) remaining
                             </small>
                         <?php endif; ?>
@@ -257,7 +314,7 @@ try {
                                     <span class="ms-auto badge bg-light text-success fw-bold">Done</span>
                                 <?php else: ?>
                                     <div class="step-dot step-active"></div>
-                                    <span>Upload PSA, TOR, & Diploma</span>
+                                    <span>Update PSA, TOR, & Diploma</span>
                                     <span class="ms-auto"><a href="<?php echo $root; ?>upload/upload.php" class="text-royal small fw-bold">Submit Files</a></span>
                                 <?php endif; ?>
                             </li>

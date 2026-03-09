@@ -1,48 +1,63 @@
-<?php 
-// Start session and include RBAC guard
+<?php
 session_start();
 require_once('../includes/rbac-guard.php');
-
-// Protect this page - Only Students can access
 checkStudent();
 
-include '../includes/header.php'; 
-include '../includes/sidebar.php'; 
+include '../includes/header.php';
+include '../includes/sidebar.php';
 
-// SAMPLE DATA
-$historyData = [
-    ["course" => "Shielded Metal Arc Welding (SMAW) NC II", "batch" => "Batch 2023-01", "date" => "2023-01-15", "status" => "Approved", "reason" => ""],
-    ["course" => "Caregiving NC II", "batch" => "Batch 2023-05", "date" => "2023-05-10", "status" => "Pending", "reason" => ""],
-    ["course" => "EPAS NC II", "batch" => "Batch 2023-08", "date" => "2023-08-22", "status" => "Rejected", "reason" => "Incomplete documentary requirements."],
-    ["course" => "Bookkeeping NC III", "batch" => "Batch 2024-01", "date" => "2024-01-05", "status" => "Approved", "reason" => ""]
-];
+require_once('../db-connect.php');
+
+$historyData = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT 
+            e.Id,
+            c.CourseName,
+            c.CourseCode,
+            b.BatchCode,
+            b.BatchName,
+            b.StartDate,
+            b.EndDate,
+            e.School,
+            e.Status,
+            e.EnrolledAt,
+            e.Remarks
+        FROM enrollments e
+        INNER JOIN courses c ON e.CourseId = c.Id
+        INNER JOIN batches b ON e.BatchId = b.Id
+        WHERE e.StudentId = ?
+        ORDER BY e.EnrolledAt DESC
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    $historyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('Enrollment History Error: ' . $e->getMessage());
+}
 ?>
 
 <div class="main-content">
     <div class="container-fluid">
-        
+
         <div class="row mb-4 align-items-end">
             <div class="col-md-5">
                 <h3 class="fw-bold"><i class="fas fa-history me-2 text-primary"></i>Enrollment History</h3>
                 <p class="text-muted small">Search by keyword or specific application date.</p>
             </div>
-            
+
             <!-- SEARCH CONTROLS -->
             <div class="col-md-7">
                 <div class="row g-2">
-                    <!-- Text Search -->
                     <div class="col-md-7">
                         <div class="input-group shadow-sm">
                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
                             <input type="text" id="historySearch" class="form-control border-start-0 ps-0" placeholder="Search course or batch...">
                         </div>
                     </div>
-                    <!-- Date Search -->
                     <div class="col-md-5">
                         <div class="input-group shadow-sm">
                             <span class="input-group-text bg-white border-end-0"><i class="fas fa-calendar-day text-muted"></i></span>
                             <input type="date" id="dateSearch" class="form-control border-start-0 ps-0">
-                            <!-- Clear Date Button -->
                             <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearDateFilter()" title="Clear Date">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -54,15 +69,15 @@ $historyData = [
 
         <div class="card shadow-sm border-0 rounded-4">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-royal">My Course Applications</h5>
+                <h5 class="mb-0 fw-bold text-royal">My Course Enrollments</h5>
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-filter me-1"></i> Sort By
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                        <li><a class="dropdown-item" href="#" onclick="sortTable(2, 'date')">Date Applied (Newest)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortTable(3, 'date')">Date Enrolled (Newest)</a></li>
                         <li><a class="dropdown-item" href="#" onclick="sortTable(0, 'string')">Course Name (A-Z)</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="sortTable(3, 'string')">Status</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortTable(4, 'string')">Status</a></li>
                     </ul>
                 </div>
             </div>
@@ -71,45 +86,87 @@ $historyData = [
                     <table class="table table-hover align-middle mb-0" id="historyTable" data-sort-dir="asc">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4" style="width: 40%; cursor:pointer;" onclick="sortTable(0, 'string')">Course / Qualification <i class="fas fa-sort ms-1 small text-muted"></i></th>
-                                <th style="width: 20%;">Batch</th>
-                                <th style="width: 20%; cursor:pointer;" onclick="sortTable(2, 'date')">Date Applied <i class="fas fa-sort ms-1 small text-muted"></i></th>
-                                <th class="text-center" style="width: 20%;">Status</th>
+                                <th class="ps-4" style="width:30%; cursor:pointer;" onclick="sortTable(0, 'string')">
+                                    Course / Qualification <i class="fas fa-sort ms-1 small text-muted"></i>
+                                </th>
+                                <th style="width:20%;">Batch</th>
+                                <th style="width:10%;">School</th>
+                                <th style="width:20%; cursor:pointer;" onclick="sortTable(3, 'date')">
+                                    Date Enrolled <i class="fas fa-sort ms-1 small text-muted"></i>
+                                </th>
+                                <th class="text-center" style="width:20%;">Status</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
-                            <?php foreach ($historyData as $row): ?>
-                                <tr class="history-row" data-date="<?php echo $row['date']; ?>">
+                            <?php if (empty($historyData)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-journal-x" style="font-size:3rem;"></i>
+                                        <p class="mt-2 mb-0">No enrollment records found</p>
+                                        <small>Please wait for admin to assign you to a course</small>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($historyData as $row):
+                                    $enrolledDate    = $row['EnrolledAt'] ? date('Y-m-d', strtotime($row['EnrolledAt'])) : '';
+                                    $enrolledDisplay = $enrolledDate ? date('M d, Y', strtotime($enrolledDate)) : 'N/A';
+                                    $startDisplay    = $row['StartDate'] ? date('M d, Y', strtotime($row['StartDate'])) : 'TBA';
+                                    $endDisplay      = $row['EndDate']   ? date('M d, Y', strtotime($row['EndDate']))   : 'TBA';
+
+                                    $badge = match($row['Status']) {
+                                        'Enrolled'  => 'bg-success text-white',
+                                        'Ongoing'   => 'bg-primary text-white',
+                                        'Completed' => 'bg-success text-white',
+                                        'Dropped'   => 'bg-danger text-white',
+                                        'Failed'    => 'bg-danger text-white',
+                                        default     => 'bg-warning text-dark'
+                                    };
+                                ?>
+                                <tr class="history-row" data-date="<?php echo $enrolledDate; ?>">
                                     <td class="ps-4">
-                                        <div class="text-dark fw-bold course-name"><?php echo $row['course']; ?></div>
+                                        <div class="fw-bold text-dark course-name">
+                                            <?php echo htmlspecialchars($row['CourseName']); ?>
+                                        </div>
+                                        <small class="text-muted">
+                                            <span class="badge bg-secondary"><?php echo htmlspecialchars($row['CourseCode']); ?></span>
+                                        </small>
                                     </td>
                                     <td class="batch-name">
-                                        <span class="text-muted"><?php echo $row['batch']; ?></span>
+                                        <div class="fw-semibold"><?php echo htmlspecialchars($row['BatchCode']); ?> - <?php echo htmlspecialchars($row['BatchName']); ?></div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar-range me-1"></i>
+                                            <?php echo $startDisplay; ?> – <?php echo $endDisplay; ?>
+                                        </small>
                                     </td>
-                                    <td data-order="<?php echo $row['date']; ?>">
+                                    <td>
+                                        <?php
+                                            $schoolBadge = $row['School'] === 'TB5'
+                                                ? 'bg-info text-white'
+                                                : 'bg-warning text-dark';
+                                        ?>
+                                        <span class="badge <?php echo $schoolBadge; ?>">
+                                            <?php echo htmlspecialchars($row['School']); ?>
+                                        </span>
+                                    </td>
+                                    <td data-order="<?php echo $enrolledDate; ?>">
                                         <i class="far fa-calendar-alt me-1 text-secondary"></i>
-                                        <?php echo date('M d, Y', strtotime($row['date'])); ?>
+                                        <?php echo $enrolledDisplay; ?>
                                     </td>
                                     <td class="text-center">
-                                        <?php 
-                                            $badge = "bg-warning text-dark"; 
-                                            if ($row['status'] == "Approved") $badge = "bg-success text-white";
-                                            if ($row['status'] == "Rejected") $badge = "bg-danger text-white";
-                                        ?>
                                         <span class="badge <?php echo $badge; ?> px-3 py-2 rounded-pill shadow-sm">
-                                            <?php echo $row['status']; ?>
+                                            <?php echo htmlspecialchars($row['Status']); ?>
                                         </span>
-
-                                        <?php if ($row['status'] == "Rejected"): ?>
-                                            <div class="mt-2 text-start mx-auto" style="max-width: 220px;">
-                                                <div class="p-2 border border-danger-subtle bg-danger bg-opacity-10 rounded text-danger" style="font-size: 11px; font-style: italic;">
-                                                    "<?php echo $row['reason']; ?>"
+                                        <?php if (!empty($row['Remarks'])): ?>
+                                            <div class="mt-2 text-start mx-auto" style="max-width:220px;">
+                                                <div class="p-2 border border-secondary-subtle bg-secondary bg-opacity-10 rounded text-muted" style="font-size:11px; font-style:italic;">
+                                                    "<?php echo htmlspecialchars($row['Remarks']); ?>"
                                                 </div>
                                             </div>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -121,23 +178,21 @@ $historyData = [
     </div>
 </div>
 
-<!-- SEARCH, DATE FILTER & SORT SCRIPT -->
 <script>
-    const textSearch = document.getElementById('historySearch');
-    const dateSearch = document.getElementById('dateSearch');
-    const rows = document.querySelectorAll('.history-row');
+    const textSearch         = document.getElementById('historySearch');
+    const dateSearch         = document.getElementById('dateSearch');
+    const rows               = document.querySelectorAll('.history-row');
     const recordCountDisplay = document.getElementById('recordCount');
 
-    // Combined Filter Logic (Text + Date)
     function applyFilters() {
-        let textFilter = textSearch.value.toLowerCase();
-        let dateFilter = dateSearch.value; // Format: YYYY-MM-DD
+        let textFilter   = textSearch.value.toLowerCase();
+        let dateFilter   = dateSearch.value;
         let visibleCount = 0;
 
         rows.forEach(row => {
-            let course = row.querySelector('.course-name').textContent.toLowerCase();
-            let batch = row.querySelector('.batch-name').textContent.toLowerCase();
-            let rowDate = row.getAttribute('data-date'); // YYYY-MM-DD
+            let course  = row.querySelector('.course-name').textContent.toLowerCase();
+            let batch   = row.querySelector('.batch-name').textContent.toLowerCase();
+            let rowDate = row.getAttribute('data-date');
 
             let matchesText = course.includes(textFilter) || batch.includes(textFilter);
             let matchesDate = dateFilter === "" || rowDate === dateFilter;
@@ -152,7 +207,6 @@ $historyData = [
         recordCountDisplay.textContent = "Found: " + visibleCount + " record(s)";
     }
 
-    // Event Listeners
     textSearch.addEventListener('keyup', applyFilters);
     dateSearch.addEventListener('change', applyFilters);
 
@@ -161,10 +215,9 @@ $historyData = [
         applyFilters();
     }
 
-    // Sort Logic (Remains high performance)
     function sortTable(columnIndex, type) {
-        let table = document.getElementById("historyTable");
-        let rowsArray = Array.from(document.querySelectorAll('.history-row'));
+        let table       = document.getElementById("historyTable");
+        let rowsArray   = Array.from(document.querySelectorAll('.history-row'));
         let isAscending = table.getAttribute("data-sort-dir") === "asc";
 
         rowsArray.sort((a, b) => {
@@ -172,8 +225,8 @@ $historyData = [
             let valB = b.cells[columnIndex].innerText.trim();
 
             if (type === 'date') {
-                valA = a.cells[columnIndex].getAttribute('data-order');
-                valB = b.cells[columnIndex].getAttribute('data-order');
+                valA = a.cells[columnIndex].getAttribute('data-order') || '';
+                valB = b.cells[columnIndex].getAttribute('data-order') || '';
             }
 
             return isAscending ? valA.localeCompare(valB) : valB.localeCompare(valA);
