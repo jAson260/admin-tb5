@@ -137,6 +137,14 @@ function isActive($page) {
                 <span class="menu-label">Course Management</span>
             </a>
         </li>
+
+        <!-- Subject Management -->
+        <li>
+            <a href="../subject-management/" class="<?php echo isActive('subject-management.php'); ?>">
+                <i class="bi bi-journal-bookmark-fill"></i>
+                <span class="menu-label">Subject Management</span>
+            </a>
+        </li>
         
         <!-- TOR -->
         <li>

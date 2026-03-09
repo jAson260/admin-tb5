@@ -8,39 +8,38 @@ require_once('../../db-connect.php');
 include('../header/header.php');
 include('../sidebar/sidebar.php');
 
-// Get statistics
 try {
-    $statsQuery = $pdo->query("
-        SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END) as active,
-            SUM(CASE WHEN School = 'TB5' THEN 1 ELSE 0 END) as tb5,
-            SUM(CASE WHEN School = 'BBI' THEN 1 ELSE 0 END) as bbi
+    $stats = $pdo->query("
+        SELECT
+            COUNT(*)                                          AS total,
+            SUM(CASE WHEN IsActive = 1 THEN 1 ELSE 0 END)   AS active,
+            SUM(CASE WHEN School = 'TB5' THEN 1 ELSE 0 END) AS tb5,
+            SUM(CASE WHEN School = 'BBI' THEN 1 ELSE 0 END) AS bbi
         FROM subjects
-    ");
-    $stats = $statsQuery->fetch(PDO::FETCH_ASSOC);
+    ")->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    error_log("Stats error: " . $e->getMessage());
     $stats = ['total' => 0, 'active' => 0, 'tb5' => 0, 'bbi' => 0];
 }
 ?>
 
 <div class="content-wrapper">
     <div class="main-content">
-        <!-- Page Title Card -->
-        <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+
+        <!-- Page Header -->
+        <div class="card border-0 shadow-sm mb-4"
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <h2 class="fw-bold text-white mb-2">
+                        <h2 class="fForcourw-bold text-white mb-1">
                             <i class="bi bi-journal-bookmark-fill me-2"></i>Subject Management
                         </h2>
-                        <p class="text-white-50 mb-0">
-                            Create and manage TESDA subjects/competencies for TB5 and Big Blossom Institute
+                        <p class="text-white-50 mb-0 small">
+                            Manage TESDA subjects for TB5 and Big Blossom Institute
                         </p>
                     </div>
                     <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <button class="btn btn-light" onclick="showCreateSubjectModal()">
+                        <button class="btn btn-light fw-semibold" onclick="showCreateModal()">
                             <i class="bi bi-plus-circle me-2"></i>Add New Subject
                         </button>
                     </div>
@@ -48,63 +47,63 @@ try {
             </div>
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- Stats -->
         <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                                <i class="bi bi-journal-bookmark-fill text-primary" style="font-size: 1.5rem;"></i>
+                                <i class="bi bi-journal-bookmark text-primary fs-4"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0 small">Total Subjects</h6>
-                                <h3 class="mb-0 fw-bold" id="statTotal"><?php echo $stats['total']; ?></h3>
+                                <div class="text-muted small">Total Subjects</div>
+                                <h3 class="mb-0 fw-bold" id="statTotal"><?= $stats['total'] ?? 0 ?></h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
-                                <i class="bi bi-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                <i class="bi bi-check-circle text-success fs-4"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0 small">Active Subjects</h6>
-                                <h3 class="mb-0 fw-bold" id="statActive"><?php echo $stats['active']; ?></h3>
+                                <div class="text-muted small">Active</div>
+                                <h3 class="mb-0 fw-bold" id="statActive"><?= $stats['active'] ?? 0 ?></h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-info bg-opacity-10 rounded-circle p-3 me-3">
-                                <i class="bi bi-bank text-info" style="font-size: 1.5rem;"></i>
-                            </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="../assets/img/tb5-logo.png" alt="TB5"
+                                style="width:48px;height:48px;object-fit:cover;border-radius:50%;
+                                       box-shadow:0 2px 8px rgba(0,0,0,.15);">
                             <div>
-                                <h6 class="text-muted mb-0 small">TB5 Subjects</h6>
-                                <h3 class="mb-0 fw-bold" id="statTB5"><?php echo $stats['tb5']; ?></h3>
+                                <div class="text-muted small">TB5 Subjects</div>
+                                <h3 class="mb-0 fw-bold" id="statTB5"><?= $stats['tb5'] ?? 0 ?></h3>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
-                                <i class="bi bi-building text-warning" style="font-size: 1.5rem;"></i>
-                            </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="../assets/img/bbi-logo.png" alt="BBI"
+                                style="width:48px;height:48px;object-fit:cover;border-radius:50%;
+                                       box-shadow:0 2px 8px rgba(0,0,0,.15);">
                             <div>
-                                <h6 class="text-muted mb-0 small">BBI Subjects</h6>
-                                <h3 class="mb-0 fw-bold" id="statBBI"><?php echo $stats['bbi']; ?></h3>
+                                <div class="text-muted small">BBI Subjects</div>
+                                <h3 class="mb-0 fw-bold" style="color:#e0314e;" id="statBBI"><?= $stats['bbi'] ?? 0 ?></h3>
                             </div>
                         </div>
                     </div>
@@ -112,274 +111,376 @@ try {
             </div>
         </div>
 
-        <!-- Filter Section -->
+        <!-- Filters -->
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-5">
-                        <label class="form-label fw-semibold small">Search Subject</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" placeholder="Subject name, code, or course..." id="searchSubject" onkeyup="loadSubjects()">
-                        </div>
+            <div class="card-body py-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small mb-1">
+                            <i class="bi bi-search me-1"></i>Search
+                        </label>
+                        <input type="text" class="form-control" id="searchSubject"
+                            placeholder="Code, name..." onkeyup="loadSubjects()">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold small">Filter by Status</label>
-                        <select class="form-select" id="filterStatus" onchange="loadSubjects()">
-                            <option value="">All Status</option>
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small mb-1">School</label>
+                        <select class="form-select" id="filterSchool"
+                            onchange="loadFilterCourses(); loadSubjects();">
+                            <option value="">All Schools</option>
+                            <option value="TB5">TB5</option>
+                            <option value="BBI">BBI</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold small">&nbsp;</label>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small mb-1">Course</label>
+                        <select class="form-select" id="filterCourse" onchange="loadSubjects()">
+                            <option value="">All Courses</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small mb-1">Competency</label>
+                        <select class="form-select" id="filterCompetency" onchange="loadSubjects()">
+                            <option value="">All</option>
+                            <option value="Basic">Basic</option>
+                            <option value="Common">Common</option>
+                            <option value="Core">Core</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
                         <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                            <i class="bi bi-arrow-counterclockwise"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Subjects by School Tabs -->
+        <!-- Table -->
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="all-subjects-tab" data-bs-toggle="tab" data-bs-target="#all-subjects" type="button" role="tab" onclick="setTabFilter('')">
-                            <i class="bi bi-list-ul me-1"></i> All Subjects
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tb5-subjects-tab" data-bs-toggle="tab" data-bs-target="#tb5-subjects" type="button" role="tab" onclick="setTabFilter('TB5')">
-                            <i class="bi bi-bank me-1"></i> TB5 Subjects
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="bbi-subjects-tab" data-bs-toggle="tab" data-bs-target="#bbi-subjects" type="button" role="tab" onclick="setTabFilter('BBI')">
-                            <i class="bi bi-building me-1"></i> BBI Subjects
-                        </button>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <!-- All Subjects Tab -->
-                    <div class="tab-pane fade show active" id="all-subjects" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle" id="subjectsTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Subject Code</th>
-                                        <th>Subject Name</th>
-                                        <th>Course</th>
-                                        <th>School</th>
-                                        <th>Type</th>
-                                        <th>Hours</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="subjectsTableBody">
-                                    <tr>
-                                        <td colspan="8" class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- TB5 Subjects Tab -->
-                    <div class="tab-pane fade" id="tb5-subjects" role="tabpanel">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Showing subjects for <strong>The Big Five Training and Assessment Center</strong>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Subject Code</th>
-                                        <th>Subject Name</th>
-                                        <th>Course</th>
-                                        <th>Type</th>
-                                        <th>Hours</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tb5TableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- BBI Subjects Tab -->
-                    <div class="tab-pane fade" id="bbi-subjects" role="tabpanel">
-                        <div class="alert alert-warning">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Showing subjects for <strong>Big Blossom Institute Inc.</strong>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Subject Code</th>
-                                        <th>Subject Name</th>
-                                        <th>Course</th>
-                                        <th>Type</th>
-                                        <th>Hours</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="bbiTableBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center">Loading...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-table me-2 text-primary"></i>Subjects List
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="small text-muted mb-0">Show</label>
+                        <select class="form-select form-select-sm" id="entriesPerPage"
+                            style="width:75px;" onchange="changeEntries()">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <label class="small text-muted mb-0">entries</label>
+                        <span class="badge bg-primary rounded-pill ms-2" id="subjectCount">0</span>
                     </div>
                 </div>
             </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3" style="width:45px;">#</th>
+                                <th>Subject Code</th>
+                                <th>Subject Name</th>
+                                <th>Course</th>
+                                <th>School</th>
+                                <th>Competency</th>
+                                <th>Hours</th>
+                                <th class="text-center" style="width:120px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subjectsTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                    <p class="mt-2 text-muted small mb-0">Loading subjects...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Pagination Footer -->
+            <div class="card-footer bg-white border-top py-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small" id="paginationInfo">
+                        Showing 0 to 0 of 0 entries
+                    </div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="paginationLinks">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
         </div>
+
     </div>
 </div>
 
-<!-- Create/Edit Subject Modal -->
-<div class="modal fade" id="subjectModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <h5 class="modal-title text-white">
-                    <i class="bi bi-plus-circle me-2"></i><span id="modalTitle">Add New Subject</span>
+<!-- ADD / EDIT MODAL -->
+<div class="modal fade" id="subjectModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white border-0"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-journal-plus me-2"></i>
+                    <span id="modalTitle">Add New Subject</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="subjectForm">
+            <div class="modal-body p-4">
+                <form id="subjectForm" autocomplete="off" novalidate>
                     <input type="hidden" id="subjectId">
-                    <div class="row">
-                        <!-- Left Column -->
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-info-circle me-2"></i>Basic Information
-                            </h6>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Subject Code <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="subjectCode" placeholder="e.g., CSS-NC2-001" required>
-                                <div class="form-text">Unique identifier for the subject</div>
+
+                    <!-- School & Course -->
+                    <div class="p-3 rounded-3 mb-4" style="background:#f0f4ff; border:1px solid #c7d2fe;">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <span class="badge bg-primary me-2">1</span>School &amp; Course
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">
+                                    School <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="modalSchool" required
+                                    onchange="loadCoursesBySchool()">
+                                    <option value="">-- Choose --</option>
+                                    <option value="TB5">TB5</option>
+                                    <option value="BBI">BBI</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a school.</div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Subject Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="subjectName" placeholder="e.g., Basic Life Support" required>
+                            <div class="col-md-9">
+                                <label class="form-label fw-semibold small">
+                                    Course <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="subjectCourse" required disabled>
+                                    <option value="">Select School First</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a course.</div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Description</label>
-                                <textarea class="form-control" id="subjectDescription" rows="4" placeholder="Enter subject description..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Competency & Count (only for Add mode) -->
+                    <div class="p-3 rounded-3 mb-4 d-none" id="competencyCountSection"
+                        style="background:#fff7ed; border:1px solid #fed7aa;">
+                        <h6 class="fw-bold text-warning mb-3">
+                            <span class="badge bg-warning text-dark me-2">2</span>
+                            Competency &amp; Subject Count
+                        </h6>
+
+                        <!-- BASIC -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <span class="badge bg-info fs-6 px-3 py-2">
+                                    <i class="bi bi-1-circle me-1"></i>Basic Competencies
+                                </span>
+                                <div class="input-group" style="width:140px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('basic', -1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                        id="countBasic" value="0" min="0" max="20"
+                                        oninput="renderCompRows('basic')">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('basic', 1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">subjects</small>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Learning Outcomes</label>
-                                <textarea class="form-control" id="learningOutcomes" rows="3" placeholder="e.g., Demonstrate basic life support techniques..."></textarea>
+                            <div id="basicRowsWrapper" class="d-none">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm align-middle mb-0">
+                                        <thead class="table-info">
+                                            <tr>
+                                                <th style="width:40px;" class="text-center">#</th>
+                                                <th style="width:180px;">Subject Code</th>
+                                                <th>Subject Name</th>
+                                                <th style="width:130px;">Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="basicRowsBody"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Right Column -->
-                        <div class="col-md-6">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-gear me-2"></i>Subject Details
-                            </h6>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">School <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="subjectSchool" required onchange="loadCoursesBySchool()">
-                                        <option value="">Choose School...</option>
-                                        <option value="TB5">TB5</option>
-                                        <option value="BBI">Big Blossom Institute</option>
-                                    </select>
+                        <!-- COMMON -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                    <i class="bi bi-2-circle me-1"></i>Common Competencies
+                                </span>
+                                <div class="input-group" style="width:140px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('common', -1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                        id="countCommon" value="0" min="0" max="20"
+                                        oninput="renderCompRows('common')">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('common', 1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Course <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="subjectCourse" required disabled>
-                                        <option value="">Select School First</option>
-                                    </select>
+                                <small class="text-muted">subjects</small>
+                            </div>
+                            <div id="commonRowsWrapper" class="d-none">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm align-middle mb-0">
+                                        <thead class="table-warning">
+                                            <tr>
+                                                <th style="width:40px;" class="text-center">#</th>
+                                                <th style="width:180px;">Subject Code</th>
+                                                <th>Subject Name</th>
+                                                <th style="width:130px;">Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="commonRowsBody"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Subject Type <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="subjectType" required>
-                                        <option value="">Select Type</option>
-                                        <option value="Theory">Theory</option>
-                                        <option value="Practical">Practical</option>
-                                        <option value="Mixed">Mixed</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Competency <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="subjectCompetency" required>
-                                        <option value="">Select Competency</option>
-                                        <option value="Basic">Basic Competency</option>
-                                        <option value="Common">Common Competency</option>
-                                        <option value="Core">Core Competency</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Total Hours <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="subjectHours" placeholder="e.g., 40" required min="1" oninput="calculateSubjectDays()">
-                                    <div class="form-text">Enter total subject hours</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Total Days</label>
-                                    <input type="number" class="form-control" id="subjectDays" placeholder="Auto-calculated" readonly>
-                                    <div class="form-text">Calculated at 8 hours/day</div>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Passing Grade (%)</label>
-                                    <input type="number" class="form-control" id="passingGrade" placeholder="e.g., 75" min="0" max="100">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Sequence/Order</label>
-                                    <input type="number" class="form-control" id="subjectOrder" placeholder="e.g., 1" min="1">
-                                    <div class="form-text">Display order within course</div>
-                                </div>
-                            </div>
+                        </div>
 
-                            <!-- Status -->
-                            <h6 class="fw-bold mb-3 mt-4">
-                                <i class="bi bi-toggle-on me-2"></i>Status
+                        <!-- CORE -->
+                        <div class="mb-2">
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <span class="badge bg-danger fs-6 px-3 py-2">
+                                    <i class="bi bi-3-circle me-1"></i>Core Competencies
+                                </span>
+                                <div class="input-group" style="width:140px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('core', -1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input type="number" class="form-control form-control-sm text-center fw-bold"
+                                        id="countCore" value="0" min="0" max="20"
+                                        oninput="renderCompRows('core')">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="changeCompCount('core', 1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">subjects</small>
+                            </div>
+                            <div id="coreRowsWrapper" class="d-none">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm align-middle mb-0">
+                                        <thead class="table-danger">
+                                            <tr>
+                                                <th style="width:40px;" class="text-center">#</th>
+                                                <th style="width:180px;">Subject Code</th>
+                                                <th>Subject Name</th>
+                                                <th style="width:130px;">Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="coreRowsBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mb-0 py-2 small mt-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Set the count per competency above. Rows appear automatically.
+                        </div>
+                    </div>
+
+                    <!-- Remove old multiSubjectSection entirely -->
+
+                    <!-- Single Subject Info (Edit mode) -->
+                    <div id="singleSubjectSection" class="d-none">
+                        <div class="p-3 rounded-3 mb-4" style="background:#f0fff4; border:1px solid #bbf7d0;">
+                            <h6 class="fw-bold text-success mb-3">
+                                <span class="badge bg-success me-2">2</span>Subject Information
                             </h6>
-                            <div class="card bg-light border-0">
-                                <div class="card-body">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="subjectStatus" checked>
-                                        <label class="form-check-label fw-semibold" for="subjectStatus">
-                                            Subject is Active and Available
-                                        </label>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">
+                                        Subject Code <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control font-monospace fw-bold"
+                                        id="subjectCode" placeholder="e.g. CSS-BC1" maxlength="50"
+                                        oninput="this.value=this.value.toUpperCase()">
+                                    <div class="invalid-feedback">Required.</div>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold small">
+                                        Subject Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="subjectName"
+                                        placeholder="e.g. Participate in Workplace Communication"
+                                        maxlength="255">
+                                    <div class="invalid-feedback">Required.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        Competency <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select" id="subjectCompetency">
+                                        <option value="">Select...</option>
+                                        <option value="Basic">Basic</option>
+                                        <option value="Common">Common</option>
+                                        <option value="Core">Core</option>
+                                    </select>
+                                    <div class="invalid-feedback">Required.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">
+                                        Hours <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="subjectHours"
+                                            placeholder="e.g. 20" min="1" max="9999">
+                                        <span class="input-group-text">hrs</span>
                                     </div>
+                                    <div class="invalid-feedback">Required.</div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Dynamic Multi-Row Section (Add mode) -->
+                    <div id="multiSubjectSection" class="d-none">
+                        <div class="p-3 rounded-3 mb-2" style="background:#f0fff4; border:1px solid #bbf7d0;">
+                            <h6 class="fw-bold text-success mb-3">
+                                <span class="badge bg-success me-2">3</span>
+                                Subject Details
+                                <span class="badge bg-success ms-2" id="competencyBadgeLabel"></span>
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead class="table-success">
+                                        <tr>
+                                            <th style="width:45px;" class="text-center">#</th>
+                                            <th style="width:200px;">Subject Code</th>
+                                            <th>Subject Name</th>
+                                            <th style="width:150px;">Hours</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="multiSubjectBody">
+                                        <!-- Rows injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" onclick="saveSubject()">
+                <button type="button" class="btn btn-primary px-4" id="saveBtn"
+                    onclick="saveSubject()">
                     <i class="bi bi-check-circle me-1"></i>Save Subject
                 </button>
             </div>
@@ -387,405 +488,798 @@ try {
     </div>
 </div>
 
-<!-- View Subject Details Modal -->
-<div class="modal fade" id="viewSubjectModal" tabindex="-1">
+<!-- VIEW MODAL -->
+<div class="modal fade" id="viewModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <h5 class="modal-title text-white">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white border-0"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title fw-bold">
                     <i class="bi bi-eye me-2"></i>Subject Details
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="subjectDetailsBody"></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-body p-4" id="viewModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Close
+                </button>
+                <button type="button" class="btn btn-success" id="viewEditBtn">
+                    <i class="bi bi-pencil me-1"></i>Edit This Subject
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- DELETE MODAL -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-trash me-2"></i>Delete Subject
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size:3rem;"></i>
+                <p class="mt-3 fw-semibold mb-1">Are you sure?</p>
+                <p class="text-muted small mb-0">
+                    Deleting <strong class="text-danger" id="deleteSubjectLabel"></strong>
+                    cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
+                <button type="button" class="btn btn-outline-secondary px-4"
+                    data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger px-4" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+    <div id="toastMsg" class="toast align-items-center text-white border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toastText"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
 <style>
-    .nav-tabs .nav-link {
-        color: #333;
-        border: none;
-        transition: all 0.3s ease;
-    }
-
-    .nav-tabs .nav-link:hover {
-        color: #4169E1;
-        background-color: rgba(65, 105, 225, 0.1);
-    }
-
-    .nav-tabs .nav-link.active {
-        background-color: #4169E1 !important;
-        color: white !important;
-        border: none;
-        border-bottom: 3px solid #2948b8;
-    }
-
-    .form-check-input:checked {
-        background-color: #198754;
-        border-color: #198754;
-    }
+.table > :not(caption) > * > th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+}
+.font-monospace { font-family: 'Courier New', monospace; }
 </style>
 
-<script>
-let currentTabFilter = '';
 
-$(document).ready(function() {
+
+<script>
+let deleteTargetId   = null;
+let viewingSubjectId = null;
+let isEditMode       = false;
+let allSubjectsData  = [];
+let currentPage      = 1;
+
+$(document).ready(function () {
     loadSubjects();
+    loadFilterCourses();
+
+    $('#subjectStatus').on('change', function () {
+        $('#statusLabel')
+            .text(this.checked ? 'Active' : 'Inactive')
+            .removeClass('text-success text-danger')
+            .addClass(this.checked ? 'text-success' : 'text-danger');
+    });
+
+    $('#confirmDeleteBtn').on('click', function () {
+        if (!deleteTargetId) return;
+        const $btn = $(this);
+        $btn.prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm me-1"></span>Deleting...');
+
+        $.ajax({
+            url: 'delete-subject.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: deleteTargetId }),
+            dataType: 'json',
+            success: function (res) {
+                $btn.prop('disabled', false)
+                    .html('<i class="bi bi-trash me-1"></i>Delete');
+                bootstrap.Modal.getInstance(
+                    document.getElementById('deleteModal')).hide();
+                deleteTargetId = null;
+                showToast(res.success ? 'Subject deleted.' : 'Error: ' + res.message,
+                    res.success ? 'success' : 'danger');
+                if (res.success) loadSubjects();
+            },
+            error: function () {
+                $btn.prop('disabled', false)
+                    .html('<i class="bi bi-trash me-1"></i>Delete');
+                showToast('Failed to delete. Try again.', 'danger');
+            }
+        });
+    });
+
+    $('#viewEditBtn').on('click', function () {
+        bootstrap.Modal.getInstance(document.getElementById('viewModal')).hide();
+        setTimeout(() => editSubject(viewingSubjectId), 400);
+    });
 });
 
-function setTabFilter(school) {
-    currentTabFilter = school;
-    loadSubjects();
-}
-
-function resetFilters() {
-    $('#searchSubject').val('');
-    $('#filterStatus').val('');
-    currentTabFilter = '';
-    $('#all-subjects-tab').tab('show');
-    loadSubjects();
-}
-
-function loadSubjects() {
-    const search = $('#searchSubject').val();
-    const school = currentTabFilter;
-    const status = $('#filterStatus').val();
+// ─── LOAD FILTER COURSES ──────────────────────────────────────────────────────
+function loadFilterCourses() {
+    const school = $('#filterSchool').val();
+    $('#filterCourse').html('<option value="">All Courses</option>');
 
     $.ajax({
-        url: 'get-subjects.php',
-        method: 'POST',
-        data: { search, school, status },
+        url: 'get-courses-by-school.php',
+        method: 'GET',
+        data: { school },
         dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                renderSubjectsTable(response.subjects, 'subjectsTableBody', true);
-                renderSubjectsTable(response.subjects.filter(s => s.School === 'TB5'), 'tb5TableBody', false);
-                renderSubjectsTable(response.subjects.filter(s => s.School === 'BBI'), 'bbiTableBody', false);
-
-                $('#statTotal').text(response.stats.total);
-                $('#statActive').text(response.stats.active);
-                $('#statTB5').text(response.stats.tb5);
-                $('#statBBI').text(response.stats.bbi);
-            } else {
-                console.error('Error loading subjects:', response.message);
-            }
-        },
-        error: function(xhr) {
-            console.error('Error:', xhr.responseText);
+        success: function (res) {
+            if (!res.success || !res.courses.length) return;
+            res.courses.forEach(c => {
+                $('#filterCourse').append(
+                    `<option value="${c.Id}">${escHtml(c.CourseCode)} — ${escHtml(c.CourseName)}</option>`
+                );
+            });
         }
     });
 }
 
-function renderSubjectsTable(subjects, tableBodyId, showSchool) {
-    const tbody = document.getElementById(tableBodyId);
-    const colSpan = showSchool ? 8 : 7;
+// ─── LOAD SUBJECTS ────────────────────────────────────────────────────────────
+function loadSubjects() {
+    currentPage = 1;
+    $('#subjectsTableBody').html(`
+        <tr><td colspan="8" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted small mb-0">Loading...</p>
+        </td></tr>`);
+
+    $.ajax({
+        url: 'get-subjects.php',
+        method: 'POST',
+        data: {
+            search:     $('#searchSubject').val().trim(),
+            school:     $('#filterSchool').val(),
+            courseId:   $('#filterCourse').val(),
+            competency: $('#filterCompetency').val()
+        },
+        dataType: 'json',
+        success: function (res) {
+            if (!res.success) {
+                $('#subjectsTableBody').html(`
+                    <tr><td colspan="8" class="text-center py-4 text-danger">
+                        <i class="bi bi-exclamation-circle me-1"></i>${escHtml(res.message)}
+                    </td></tr>`);
+                return;
+            }
+            allSubjectsData = res.subjects;
+            $('#statTotal').text(res.stats.total   || 0);
+            $('#statActive').text(res.stats.active || 0);
+            $('#statTB5').text(res.stats.tb5       || 0);
+            $('#statBBI').text(res.stats.bbi       || 0);
+            $('#subjectCount').text(res.subjects.length + ' subject(s)');
+            renderPage();
+        },
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            $('#subjectsTableBody').html(`
+                <tr><td colspan="8" class="text-center py-4 text-danger">
+                    <i class="bi bi-wifi-off me-1"></i>Failed to load subjects.
+                </td></tr>`);
+        }
+    });
+}
+
+// ─── CHANGE ENTRIES ───────────────────────────────────────────────────────────
+function changeEntries() {
+    currentPage = 1;
+    renderPage();
+}
+
+// ─── RENDER PAGE ──────────────────────────────────────────────────────────────
+function renderPage() {
+    const perPage  = parseInt($('#entriesPerPage').val()) || 10;
+    const total    = allSubjectsData.length;
+    const pages    = Math.ceil(total / perPage) || 1;
+
+    if (currentPage < 1)     currentPage = 1;
+    if (currentPage > pages) currentPage = pages;
+
+    const start    = (currentPage - 1) * perPage;
+    const end      = Math.min(start + perPage, total);
+    const pageData = allSubjectsData.slice(start, end);
+
+    renderTable(pageData, start);
+
+    $('#paginationInfo').text(
+        total === 0
+            ? 'Showing 0 to 0 of 0 entries'
+            : `Showing ${start + 1} to ${end} of ${total} entries`
+    );
+
+    renderPagination(pages);
+}
+
+// ─── RENDER PAGINATION ────────────────────────────────────────────────────────
+function renderPagination(pages) {
+    const ul = document.getElementById('paginationLinks');
+    ul.innerHTML = '';
+    if (pages <= 1) return;
+
+    const prev = document.createElement('li');
+    prev.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prev.innerHTML = `<a class="page-link" href="#"
+        onclick="goToPage(${currentPage - 1}); return false;">
+        <i class="bi bi-chevron-left"></i></a>`;
+    ul.appendChild(prev);
+
+    const range = 2;
+    for (let p = 1; p <= pages; p++) {
+        if (p === 1 || p === pages ||
+            (p >= currentPage - range && p <= currentPage + range)) {
+            const li = document.createElement('li');
+            li.className = `page-item ${p === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#"
+                onclick="goToPage(${p}); return false;">${p}</a>`;
+            ul.appendChild(li);
+        } else if (p === currentPage - range - 1 || p === currentPage + range + 1) {
+            const li = document.createElement('li');
+            li.className = 'page-item disabled';
+            li.innerHTML = `<span class="page-link">…</span>`;
+            ul.appendChild(li);
+        }
+    }
+
+    const next = document.createElement('li');
+    next.className = `page-item ${currentPage === pages ? 'disabled' : ''}`;
+    next.innerHTML = `<a class="page-link" href="#"
+        onclick="goToPage(${currentPage + 1}); return false;">
+        <i class="bi bi-chevron-right"></i></a>`;
+    ul.appendChild(next);
+}
+
+// ─── GO TO PAGE ───────────────────────────────────────────────────────────────
+function goToPage(page) {
+    currentPage = page;
+    renderPage();
+    document.getElementById('subjectsTableBody')
+        .closest('.card')
+        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── RENDER TABLE ─────────────────────────────────────────────────────────────
+function renderTable(subjects, offset = 0) {
+    const tbody = document.getElementById('subjectsTableBody');
 
     if (!subjects || subjects.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-muted py-4">
-            <i class="bi bi-journal-x" style="font-size:2rem;"></i><br>No subjects found
-        </td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="bi bi-journal-x" style="font-size:3rem;"></i>
+                    <p class="mt-2 mb-0 fw-semibold">No subjects found</p>
+                    <small>Try adjusting your filters or add a new subject.</small>
+                </td>
+            </tr>`;
         return;
     }
 
+    const compClass = {
+        'Basic':  'bg-info text-white',
+        'Common': 'bg-warning text-dark',
+        'Core':   'bg-danger text-white'
+    };
+
     let html = '';
-    subjects.forEach(subject => {
-        const isActive = subject.IsActive == 1;
-        const schoolBadge = subject.School === 'TB5'
-            ? '<span class="badge bg-info"><i class="bi bi-bank me-1"></i>TB5</span>'
-            : '<span class="badge bg-warning"><i class="bi bi-building me-1"></i>BBI</span>';
-
-        const typeBadge = {
-            'Theory':    'bg-primary',
-            'Practical': 'bg-success',
-            'Mixed':     'bg-secondary'
-        }[subject.SubjectType] || 'bg-secondary';
-
-        const competencyBadge = {
-            'Basic':  'bg-info',
-            'Common': 'bg-warning',
-            'Core':   'bg-danger'
-        }[subject.Competency] || 'bg-secondary';
+    subjects.forEach((s, i) => {
+        const schoolBadge = s.School === 'TB5'
+            ? `<div class="d-flex align-items-center gap-1">
+                    <img src="../assets/img/tb5-logo.png" alt="TB5"
+                        style="width:24px;height:24px;object-fit:cover;border-radius:50%;">
+                    <span class="fw-semibold small">TB5</span>
+               </div>`
+            : `<div class="d-flex align-items-center gap-1">
+                    <img src="../assets/img/bbi-logo.png" alt="BBI"
+                        style="width:24px;height:24px;object-fit:cover;border-radius:50%;">
+                    <span class="fw-semibold small" style="color:#e0314e;">BBI</span>
+               </div>`;
 
         html += `
-            <tr>
-                <td><span class="badge bg-secondary">${escapeHtml(subject.SubjectCode)}</span></td>
-                <td>
-                    <div class="fw-semibold">${escapeHtml(subject.SubjectName)}</div>
-                    <small class="text-muted"><span class="badge ${competencyBadge} bg-opacity-75">${escapeHtml(subject.Competency || '')}</span></small>
-                </td>
-                <td><small class="text-muted">${escapeHtml(subject.CourseName || 'N/A')}</small></td>
-                ${showSchool ? `<td>${schoolBadge}</td>` : ''}
-                <td><span class="badge ${typeBadge}">${escapeHtml(subject.SubjectType || 'N/A')}</span></td>
-                <td>${subject.Hours || 'N/A'} hrs</td>
-                <td>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" ${isActive ? 'checked' : ''}
-                            onchange="toggleSubjectStatus(${subject.Id}, this)">
-                        <label class="form-check-label small fw-semibold ${isActive ? 'text-success' : 'text-danger'}">
-                            ${isActive ? 'Active' : 'Inactive'}
-                        </label>
-                    </div>
-                </td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="viewSubject(${subject.Id})" title="View">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-success" onclick="editSubject(${subject.Id})" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="deleteSubject(${subject.Id})" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        <tr>
+            <td class="ps-3 text-muted small">${offset + i + 1}</td>
+            <td>
+                <span class="badge bg-dark font-monospace px-2 py-1" style="font-size:.8rem;">
+                    ${escHtml(s.SubjectCode)}
+                </span>
+            </td>
+            <td>
+                <div class="fw-semibold small">${escHtml(s.SubjectName)}</div>
+            </td>
+            <td>
+                <div class="small fw-semibold">${escHtml(s.CourseName || 'N/A')}</div>
+                <small class="text-muted font-monospace">${escHtml(s.CourseCode || '')}</small>
+            </td>
+            <td>${schoolBadge}</td>
+            <td>
+                <span class="badge rounded-pill ${compClass[s.Competency] || 'bg-secondary'}">
+                    ${escHtml(s.Competency || 'N/A')}
+                </span>
+            </td>
+            <td class="small">
+                <span class="fw-semibold">${s.Hours || 'N/A'} hrs</span>
+                ${s.Days ? `<div class="text-muted" style="font-size:.7rem;">${s.Days} days</div>` : ''}
+            </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-info" title="View"
+                        onclick="viewSubject(${s.Id})">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success" title="Edit"
+                        onclick="editSubject(${s.Id})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" title="Delete"
+                        onclick="openDeleteModal(${s.Id}, '${escJs(s.SubjectCode)} — ${escJs(s.SubjectName)}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
     });
 
     tbody.innerHTML = html;
 }
 
-function calculateSubjectDays() {
-    const hours = parseFloat($('#subjectHours').val()) || 0;
-    $('#subjectDays').val(hours > 0 ? Math.ceil(hours / 8) : '');
-}
+// ─── VIEW SUBJECT ─────────────────────────────────────────────────────────────
+function viewSubject(id) {
+    viewingSubjectId = id;
 
-function loadCoursesBySchool() {
-    const school = $('#subjectSchool').val();
-    const courseDropdown = $('#subjectCourse');
+    $('#viewModalBody').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted small">Loading...</p>
+        </div>`);
 
-    if (!school) {
-        courseDropdown.prop('disabled', true).html('<option value="">Select School First</option>');
-        return;
-    }
-
-    courseDropdown.prop('disabled', true).html('<option value="">Loading courses...</option>');
+    new bootstrap.Modal(document.getElementById('viewModal')).show();
 
     $.ajax({
-        url: '../create-batch/get-courses-by-school.php',
+        url: 'get-subject-details.php',
         method: 'GET',
-        data: { school: school },
+        data: { id: id },
         dataType: 'json',
-        success: function(data) {
-            if (data.success && data.courses && data.courses.length > 0) {
-                let options = '<option value="">Select Course</option>';
-                data.courses.forEach(course => {
-                    options += `<option value="${course.Id}">${escapeHtml(course.CourseCode)} - ${escapeHtml(course.CourseName)}</option>`;
-                });
-                courseDropdown.prop('disabled', false).html(options);
-            } else {
-                courseDropdown.prop('disabled', true).html('<option value="">No courses available</option>');
+        success: function (res) {
+            if (!res.success) {
+                $('#viewModalBody').html(`
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle me-1"></i>${escHtml(res.message)}
+                    </div>`);
+                return;
             }
+
+            const s = res.subject;
+            const compClass = {
+                'Basic':  'bg-info text-white',
+                'Common': 'bg-warning text-dark',
+                'Core':   'bg-danger text-white'
+            };
+            const schoolImg = s.School === 'TB5'
+                ? `<img src="../assets/img/tb5-logo.png"
+                        style="width:28px;height:28px;border-radius:50%;object-fit:cover;"> TB5`
+                : `<img src="../assets/img/bbi-logo.png"
+                        style="width:28px;height:28px;border-radius:50%;object-fit:cover;"> BBI`;
+
+            $('#viewModalBody').html(`
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">Subject Code</div>
+                            <div class="fw-bold font-monospace fs-5">${escHtml(s.SubjectCode)}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">School</div>
+                            <div class="fw-bold d-flex align-items-center gap-2">${schoolImg}</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 rounded-3 border">
+                            <div class="text-muted small mb-1">Subject Name</div>
+                            <div class="fw-bold">${escHtml(s.SubjectName)}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">Course</div>
+                            <div class="fw-bold">${escHtml(s.CourseName || 'N/A')}</div>
+                            <small class="text-muted font-monospace">${escHtml(s.CourseCode || '')}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">Competency</div>
+                            <span class="badge rounded-pill ${compClass[s.Competency] || 'bg-secondary'} px-3 py-2">
+                                ${escHtml(s.Competency || 'N/A')}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">Hours</div>
+                            <div class="fw-bold fs-5">
+                                ${escHtml(String(s.Hours || 'N/A'))}
+                                <small class="text-muted fs-6">hrs</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border h-100">
+                            <div class="text-muted small mb-1">Status</div>
+                            <span class="badge ${s.IsActive == 1 ? 'bg-success' : 'bg-secondary'} px-3 py-2">
+                                <i class="bi bi-${s.IsActive == 1 ? 'check-circle' : 'x-circle'} me-1"></i>
+                                ${s.IsActive == 1 ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                </div>`);
         },
-        error: function(xhr) {
-            console.error('Error loading courses:', xhr.responseText);
-            courseDropdown.prop('disabled', true).html('<option value="">Error loading courses</option>');
+        error: function () {
+            $('#viewModalBody').html(`
+                <div class="alert alert-danger">
+                    <i class="bi bi-wifi-off me-1"></i>Failed to load subject details.
+                </div>`);
         }
     });
 }
 
-function showCreateSubjectModal() {
-    document.getElementById('modalTitle').textContent = 'Add New Subject';
+// ─── OPEN DELETE MODAL ────────────────────────────────────────────────────────
+function openDeleteModal(id, label) {
+    deleteTargetId = id;
+    $('#deleteSubjectLabel').text(label);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// ─── SHOW CREATE MODAL ────────────────────────────────────────────────────────
+function showCreateModal() {
+    isEditMode = false;
+    $('#modalTitle').text('Add New Subject');
     document.getElementById('subjectForm').reset();
-    document.getElementById('subjectId').value = '';
-    document.getElementById('subjectStatus').checked = true;
-    $('#subjectCourse').prop('disabled', true).html('<option value="">Select School First</option>');
+    document.getElementById('subjectForm').classList.remove('was-validated');
+    $('#subjectId').val('');
+
+    ['basic', 'common', 'core'].forEach(sec => {
+        document.getElementById('count' + capitalize(sec)).value = 0;
+        document.getElementById(sec + 'RowsBody').innerHTML = '';
+        document.getElementById(sec + 'RowsWrapper').classList.add('d-none');
+    });
+
+    $('#modalSchool').val('');
+    $('#subjectCourse').prop('disabled', true)
+        .html('<option value="">Select School First</option>');
+
+    $('#competencyCountSection').removeClass('d-none');
+    $('#singleSubjectSection').addClass('d-none');
+
     new bootstrap.Modal(document.getElementById('subjectModal')).show();
 }
 
-function toggleSubjectStatus(subjectId, checkbox) {
-    const label = checkbox.nextElementSibling;
-    const isActive = checkbox.checked ? 1 : 0;
+// ─── LOAD COURSES BY SCHOOL ───────────────────────────────────────────────────
+function loadCoursesBySchool(preSelectCourseId = null) {
+    const school = $('#modalSchool').val();
+
+    if (!school) {
+        $('#subjectCourse').prop('disabled', true)
+            .html('<option value="">Select School First</option>');
+        return;
+    }
+
+    $('#subjectCourse').prop('disabled', true)
+        .html('<option value="">Loading...</option>');
 
     $.ajax({
-        url: 'toggle-subject-status.php',
-        method: 'POST',
-        data: JSON.stringify({ id: subjectId, isActive: isActive }),
-        contentType: 'application/json',
+        url: 'get-courses-by-school.php',
+        method: 'GET',
+        data: { school },
         dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                label.textContent = checkbox.checked ? 'Active' : 'Inactive';
-                label.className = `form-check-label small fw-semibold ${checkbox.checked ? 'text-success' : 'text-danger'}`;
-                loadSubjects();
-            } else {
-                alert('Error: ' + response.message);
-                checkbox.checked = !checkbox.checked;
+        success: function (res) {
+            if (!res.success || res.courses.length === 0) {
+                $('#subjectCourse').prop('disabled', true)
+                    .html('<option value="">No courses found for ' + school + '</option>');
+                return;
             }
+
+            let options = '<option value="">-- Select Course --</option>';
+            res.courses.forEach(c => {
+                const selected = preSelectCourseId && c.Id == preSelectCourseId ? 'selected' : '';
+                options += `<option value="${c.Id}" ${selected}>
+                    ${escHtml(c.CourseCode)} — ${escHtml(c.CourseName)}
+                </option>`;
+            });
+
+            $('#subjectCourse').prop('disabled', false).html(options);
         },
-        error: function(xhr) {
-            console.error('Error:', xhr.responseText);
-            checkbox.checked = !checkbox.checked;
+        error: function () {
+            $('#subjectCourse').prop('disabled', true)
+                .html('<option value="">Failed to load courses</option>');
+            showToast('Could not load courses. Try again.', 'danger');
         }
     });
 }
 
-function viewSubject(subjectId) {
+// ─── EDIT SUBJECT ─────────────────────────────────────────────────────────────
+function editSubject(id) {
+    isEditMode = true;
     $.ajax({
         url: 'get-subject-details.php',
         method: 'GET',
-        data: { id: subjectId },
+        data: { id },
         dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                const s = response.subject;
-                const schoolBadge = s.School === 'TB5'
-                    ? '<span class="badge bg-info">TB5</span>'
-                    : '<span class="badge bg-warning">BBI</span>';
+        success: function (res) {
+            if (!res.success) { showToast('Error: ' + res.message, 'danger'); return; }
+            const s = res.subject;
 
-                $('#subjectDetailsBody').html(`
-                    <div class="row g-3">
-                        <div class="col-md-6"><label class="text-muted small">Subject Code</label><p class="fw-semibold">${escapeHtml(s.SubjectCode)}</p></div>
-                        <div class="col-md-6"><label class="text-muted small">Subject Name</label><p class="fw-semibold">${escapeHtml(s.SubjectName)}</p></div>
-                        <div class="col-md-6"><label class="text-muted small">School</label><p>${schoolBadge}</p></div>
-                        <div class="col-md-6"><label class="text-muted small">Course</label><p class="fw-semibold">${escapeHtml(s.CourseName || 'N/A')}</p></div>
-                        <div class="col-md-6"><label class="text-muted small">Subject Type</label><p><span class="badge bg-primary">${escapeHtml(s.SubjectType || 'N/A')}</span></p></div>
-                        <div class="col-md-6"><label class="text-muted small">Competency</label><p><span class="badge bg-secondary">${escapeHtml(s.Competency || 'N/A')}</span></p></div>
-                        <div class="col-md-4"><label class="text-muted small">Total Hours</label><p class="fw-semibold">${s.Hours || 'N/A'} hrs</p></div>
-                        <div class="col-md-4"><label class="text-muted small">Total Days</label><p class="fw-semibold">${s.Days || 'N/A'} days</p></div>
-                        <div class="col-md-4"><label class="text-muted small">Passing Grade</label><p class="fw-semibold">${s.PassingGrade || 'N/A'}%</p></div>
-                        <div class="col-12"><label class="text-muted small">Description</label><p>${escapeHtml(s.Description || 'No description')}</p></div>
-                        <div class="col-12"><label class="text-muted small">Learning Outcomes</label><p>${escapeHtml(s.LearningOutcomes || 'None')}</p></div>
-                        <div class="col-md-6"><label class="text-muted small">Status</label><p><span class="badge ${s.IsActive == 1 ? 'bg-success' : 'bg-danger'}">${s.IsActive == 1 ? 'Active' : 'Inactive'}</span></p></div>
-                        <div class="col-md-6"><label class="text-muted small">Created</label><p class="fw-semibold">${formatDateTime(s.CreatedAt)}</p></div>
-                    </div>
-                `);
-                new bootstrap.Modal(document.getElementById('viewSubjectModal')).show();
-            } else {
-                alert('Error: ' + response.message);
-            }
+            $('#modalTitle').text('Edit Subject');
+            document.getElementById('subjectForm').classList.remove('was-validated');
+
+            $('#competencyCountSection').addClass('d-none');
+            $('#multiSubjectSection').addClass('d-none');
+            $('#singleSubjectSection').removeClass('d-none');
+
+            $('#subjectId').val(s.Id);
+            $('#modalSchool').val(s.School);
+            $('#subjectCode').val(s.SubjectCode);
+            $('#subjectName').val(s.SubjectName);
+            $('#subjectType').val(s.SubjectType);
+            $('#subjectCompetency').val(s.Competency);
+            $('#subjectHours').val(s.Hours || '');
+
+            loadCoursesBySchool(s.CourseId);
+            new bootstrap.Modal(document.getElementById('subjectModal')).show();
         },
-        error: function(xhr) { console.error('Error:', xhr.responseText); }
+        error: function (xhr) {
+            console.error(xhr.responseText);
+            showToast('Failed to load subject data.', 'danger');
+        }
     });
 }
 
-function editSubject(subjectId) {
-    $.ajax({
-        url: 'get-subject-details.php',
-        method: 'GET',
-        data: { id: subjectId },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                const s = response.subject;
-                document.getElementById('modalTitle').textContent = 'Edit Subject';
-                document.getElementById('subjectId').value   = s.Id;
-                document.getElementById('subjectCode').value = s.SubjectCode;
-                document.getElementById('subjectName').value = s.SubjectName;
-                document.getElementById('subjectDescription').value = s.Description || '';
-                document.getElementById('learningOutcomes').value   = s.LearningOutcomes || '';
-                document.getElementById('subjectSchool').value      = s.School;
-                document.getElementById('subjectType').value        = s.SubjectType;
-                document.getElementById('subjectCompetency').value  = s.Competency;
-                document.getElementById('subjectHours').value       = s.Hours || '';
-                document.getElementById('subjectDays').value        = s.Days || '';
-                document.getElementById('passingGrade').value       = s.PassingGrade || '';
-                document.getElementById('subjectOrder').value       = s.SubjectOrder || '';
-                document.getElementById('subjectStatus').checked    = s.IsActive == 1;
-
-                // Load courses for this school then set selected course
-                loadCoursesBySchool();
-                setTimeout(() => {
-                    $('#subjectCourse').val(s.CourseId);
-                }, 600);
-
-                new bootstrap.Modal(document.getElementById('subjectModal')).show();
-            } else {
-                alert('Error: ' + response.message);
-            }
-        },
-        error: function(xhr) { console.error('Error:', xhr.responseText); }
-    });
+// ─── CHANGE COMP COUNT ────────────────────────────────────────────────────────
+function changeCompCount(section, delta) {
+    const input = document.getElementById('count' + capitalize(section));
+    let val = parseInt(input.value) || 0;
+    val = Math.min(20, Math.max(0, val + delta));
+    input.value = val;
+    renderCompRows(section);
 }
 
-function deleteSubject(subjectId) {
-    if (confirm('Are you sure you want to delete this subject? This action cannot be undone.')) {
+// ─── RENDER COMP ROWS ─────────────────────────────────────────────────────────
+function renderCompRows(section) {
+    const input   = document.getElementById('count' + capitalize(section));
+    const count   = Math.min(20, Math.max(0, parseInt(input.value) || 0));
+    const wrapper = document.getElementById(section + 'RowsWrapper');
+    const tbody   = document.getElementById(section + 'RowsBody');
+
+    input.value = count;
+
+    if (count === 0) {
+        wrapper.classList.add('d-none');
+        tbody.innerHTML = '';
+        return;
+    }
+
+    wrapper.classList.remove('d-none');
+
+    const existing = [];
+    tbody.querySelectorAll('tr').forEach(tr => {
+        existing.push({
+            code:  tr.querySelector('.ms-code')?.value  || '',
+            name:  tr.querySelector('.ms-name')?.value  || '',
+            hours: tr.querySelector('.ms-hours')?.value || ''
+        });
+    });
+
+    tbody.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const prev = existing[i] || {};
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-center text-muted fw-semibold small">${i + 1}</td>
+            <td>
+                <input type="text"
+                    class="form-control form-control-sm font-monospace ms-code"
+                    placeholder="e.g. ${section.toUpperCase().substring(0,3)}-${i + 1}"
+                    maxlength="50"
+                    value="${escAttr(prev.code)}"
+                    oninput="this.value=this.value.toUpperCase()">
+            </td>
+            <td>
+                <input type="text"
+                    class="form-control form-control-sm ms-name"
+                    placeholder="Subject name..."
+                    maxlength="255"
+                    value="${escAttr(prev.name)}">
+            </td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <input type="number" class="form-control ms-hours"
+                        placeholder="hrs" min="1" max="9999"
+                        value="${escAttr(prev.hours)}">
+                    <span class="input-group-text">hrs</span>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+// ─── SAVE SUBJECT ─────────────────────────────────────────────────────────────
+function saveSubject() {
+    const courseId = $('#subjectCourse').val();
+    const school   = $('#modalSchool').val();
+
+    if (!school)   { showToast('Please select a school.', 'danger'); return; }
+    if (!courseId) { showToast('Please select a course.', 'danger'); return; }
+
+    const $btn     = $('#saveBtn');
+    const origHtml = $btn.html();
+    $btn.prop('disabled', true)
+        .html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
+
+    if (isEditMode) {
+        const id          = parseInt($('#subjectId').val()) || 0;
+        const subjectCode = $('#subjectCode').val().trim().toUpperCase();
+        const subjectName = $('#subjectName').val().trim();
+        const competency  = $('#subjectCompetency').val();
+        const hours       = parseInt($('#subjectHours').val()) || 0;
+
+        if (!subjectCode || !subjectName || !competency || hours <= 0) {
+            $btn.prop('disabled', false).html(origHtml);
+            showToast('Please fill in all required fields.', 'danger');
+            return;
+        }
+
         $.ajax({
-            url: 'delete-subject.php',
+            url: 'save-subject.php',
             method: 'POST',
-            data: JSON.stringify({ id: subjectId }),
             contentType: 'application/json',
+            data: JSON.stringify({ id, school, courseId, subjectCode, subjectName, competency, hours, isActive: 1 }),
             dataType: 'json',
-            success: function(response) {
-                if (response.success) {
+            success: function (res) {
+                $btn.prop('disabled', false).html(origHtml);
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('subjectModal')).hide();
+                    showToast('Subject updated successfully.', 'success');
                     loadSubjects();
                 } else {
-                    alert('Error: ' + response.message);
+                    showToast('⚠ ' + res.message, 'danger');
                 }
             },
-            error: function(xhr) { console.error('Error:', xhr.responseText); }
+            error: function () {
+                $btn.prop('disabled', false).html(origHtml);
+                showToast('Server error. Please try again.', 'danger');
+            }
+        });
+
+    } else {
+        const competencyMap = { basic: 'Basic', common: 'Common', core: 'Core' };
+        const allSubjects   = [];
+        let hasError        = false;
+
+        ['basic', 'common', 'core'].forEach(sec => {
+            const rows = document.getElementById(sec + 'RowsBody').querySelectorAll('tr');
+            rows.forEach((tr, i) => {
+                const code  = tr.querySelector('.ms-code').value.trim().toUpperCase();
+                const name  = tr.querySelector('.ms-name').value.trim();
+                const hours = parseInt(tr.querySelector('.ms-hours').value) || 0;
+
+                if (!code || !name || hours <= 0) {
+                    showToast(`${capitalize(sec)} row ${i + 1}: Fill in all fields.`, 'danger');
+                    hasError = true;
+                    return;
+                }
+                allSubjects.push({ code, name, hours, competency: competencyMap[sec] });
+            });
+        });
+
+        if (hasError) { $btn.prop('disabled', false).html(origHtml); return; }
+
+        if (allSubjects.length === 0) {
+            $btn.prop('disabled', false).html(origHtml);
+            showToast('Please add at least one subject row.', 'danger');
+            return;
+        }
+
+        $.ajax({
+            url: 'save-subjects-multi.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ school, courseId, subjects: allSubjects }),
+            dataType: 'json',
+            success: function (res) {
+                $btn.prop('disabled', false).html(origHtml);
+                if (res.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('subjectModal')).hide();
+                    showToast(`${allSubjects.length} subject(s) added successfully.`, 'success');
+                    loadSubjects();
+                } else {
+                    showToast('⚠ ' + res.message, 'danger');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false).html(origHtml);
+                showToast('Server error. Please try again.', 'danger');
+            }
         });
     }
 }
 
-function saveSubject() {
-    const form = document.getElementById('subjectForm');
-
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-
-    const subjectData = {
-        id:              document.getElementById('subjectId').value,
-        subjectCode:     document.getElementById('subjectCode').value,
-        subjectName:     document.getElementById('subjectName').value,
-        description:     document.getElementById('subjectDescription').value,
-        learningOutcomes:document.getElementById('learningOutcomes').value,
-        school:          document.getElementById('subjectSchool').value,
-        courseId:        document.getElementById('subjectCourse').value,
-        subjectType:     document.getElementById('subjectType').value,
-        competency:      document.getElementById('subjectCompetency').value,
-        hours:           document.getElementById('subjectHours').value,
-        days:            document.getElementById('subjectDays').value || null,
-        passingGrade:    document.getElementById('passingGrade').value || null,
-        subjectOrder:    document.getElementById('subjectOrder').value || null,
-        isActive:        document.getElementById('subjectStatus').checked ? 1 : 0
-    };
-
-    const saveBtn = $('button[onclick="saveSubject()"]');
-    const originalHtml = saveBtn.html();
-    saveBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Saving...');
-
-    $.ajax({
-        url: 'save-subject.php',
-        method: 'POST',
-        data: JSON.stringify(subjectData),
-        contentType: 'application/json',
-        dataType: 'json',
-        success: function(response) {
-            saveBtn.prop('disabled', false).html(originalHtml);
-            if (response.success) {
-                bootstrap.Modal.getInstance(document.getElementById('subjectModal')).hide();
-                form.reset();
-                loadSubjects();
-            } else {
-                alert('Error: ' + response.message);
-            }
-        },
-        error: function(xhr) {
-            saveBtn.prop('disabled', false).html(originalHtml);
-            console.error('Error:', xhr.responseText);
-            alert('Failed to save subject');
-        }
-    });
+// ─── RESET FILTERS ────────────────────────────────────────────────────────────
+function resetFilters() {
+    $('#searchSubject').val('');
+    $('#filterSchool').val('');
+    $('#filterCompetency').val('');
+    $('#filterStatus').val('');
+    $('#filterCourse').html('<option value="">All Courses</option>');
+    loadFilterCourses();
+    loadSubjects();
 }
 
-function escapeHtml(text) {
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const el = document.getElementById('toastMsg');
+    el.className = `toast align-items-center text-white border-0 bg-${type}`;
+    document.getElementById('toastText').textContent = msg;
+    bootstrap.Toast.getOrCreateInstance(el, { delay: 3500 }).show();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function escHtml(text) {
     if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    const d = document.createElement('div');
+    d.textContent = String(text);
+    return d.innerHTML;
 }
 
-function formatDateTime(dateStr) {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-US', {
+function escJs(text) {
+    if (!text) return '';
+    return String(text).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function escAttr(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function fmtDate(str) {
+    if (!str) return 'N/A';
+    return new Date(str).toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit'
     });
@@ -793,3 +1287,4 @@ function formatDateTime(dateStr) {
 </script>
 
 <?php include('../footer/footer.php'); ?>
+
