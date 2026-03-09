@@ -4,6 +4,10 @@ require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
 checkAdmin();
 
+// Include header and sidebar
+include('../header/header.php');
+include('../sidebar/sidebar.php');
+
 // --- 1. HANDLE FILTERS ---
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $docStatus = isset($_GET['docStatus']) ? trim($_GET['docStatus']) : '';
