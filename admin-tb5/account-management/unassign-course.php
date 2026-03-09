@@ -14,7 +14,7 @@ if (!$id) {
     exit;
 }
 
-require_once('../../includes/db.php');
+require_once('../../db-connect.php');
 
 try {
     // Delete from enrollments table (the actual enrollment record)
