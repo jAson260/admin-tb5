@@ -1,118 +1,88 @@
 <?php
-// filepath: c:\laragon\www\admin-tb5\admin-tb5\create-batch\save-batch.php
 session_start();
-require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
 
 header('Content-Type: application/json');
 
+$data = json_decode(file_get_contents('php://input'), true);
+
+$batchId     = trim($data['batchId']     ?? '');
+$editingId   = intval($data['editingId'] ?? 0);
+$batchName   = trim($data['batchName']   ?? '');
+$school      = trim($data['school']      ?? '');
+$courseId    = intval($data['courseId']  ?? 0);
+$startDate   = $data['startDate']        ?? '';
+$endDate     = $data['endDate']          ?? '';
+$description = trim($data['description'] ?? '');
+$maxStudents = isset($data['maxStudents']) && $data['maxStudents'] !== null
+                ? intval($data['maxStudents'])
+                : null;
+$status      = in_array($data['status'] ?? '', ['Active','Pending','Completed'])
+                ? $data['status']
+                : 'Active';
+
+if (!$batchName || !$school || !$courseId || !$startDate || !$endDate) {
+    echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+    exit;
+}
+
 try {
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    $batchId = $input['batchId'] ?? null;
-    $batchName = $input['batchName'] ?? null;
-    $school = $input['school'] ?? null;
-    $courseId = $input['courseId'] ?? null;
-    $courseCode = $input['courseCode'] ?? null;
-    $courseName = $input['courseName'] ?? null;
-    $startDate = $input['startDate'] ?? null;
-    $endDate = $input['endDate'] ?? null;
-    $description = $input['description'] ?? '';
-    $editingId = $input['editingId'] ?? null;
-    
-    if (!$batchId || !$batchName || !$school || !$courseId || !$startDate || !$endDate) {
-        throw new Exception('All required fields must be filled');
-    }
-    
-    if (strtotime($endDate) < strtotime($startDate)) {
-        throw new Exception('End date must be after start date');
-    }
-    
-    if (!$editingId) {
-        $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM batches WHERE BatchCode = ?");
-        $checkStmt->execute([$batchId]);
-        if ($checkStmt->fetchColumn() > 0) {
-            throw new Exception('Batch ID already exists. Please use a different ID.');
-        }
-    }
-    
-    if (!$courseName) {
-        $courseStmt = $pdo->prepare("SELECT CourseName FROM courses WHERE Id = ?");
-        $courseStmt->execute([$courseId]);
-        $courseData = $courseStmt->fetch(PDO::FETCH_ASSOC);
-        $courseName = $courseData['CourseName'] ?? 'Unknown Course';
-    }
-    
     if ($editingId) {
+        // ── UPDATE ────────────────────────────────────────────────────────────
         $stmt = $pdo->prepare("
-            UPDATE batches 
-            SET BatchCode = ?,
-                BatchName = ?,
-                CourseId = ?,
-                StartDate = ?,
-                EndDate = ?,
-                Description = ?,
-                Status = 'Active',
-                IsActive = 1,
-                UpdatedAt = NOW()
+            UPDATE batches SET
+                BatchName   = ?,
+                School      = ?,
+                CourseId    = ?,
+                StartDate   = ?,
+                EndDate     = ?,
+                MaxStudents = ?,
+                Status      = ?,
+                Description = ?
             WHERE Id = ?
         ");
-        
         $stmt->execute([
-            $batchId,
-            $batchName,
-            $courseId,
-            $startDate,
-            $endDate,
-            $description,
-            $editingId
+            $batchName, $school, $courseId,
+            $startDate, $endDate,
+            $maxStudents, $status,
+            $description, $editingId
         ]);
-        
-        echo json_encode([
-            'success' => true,
-            'batchId' => $editingId,
-            'isUpdate' => true
-        ]);
-        
+        echo json_encode(['success' => true, 'message' => 'Batch updated.']);
+
     } else {
+        // ── Auto-generate BatchCode if not provided ────────────────────────
+        if (!$batchId) {
+            $year    = date('Y');
+            $random  = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+            $batchId = "BATCH-{$year}-{$random}";
+        }
+
+        // ── Check duplicate BatchCode ──────────────────────────────────────
+        $check = $pdo->prepare("SELECT Id FROM batches WHERE BatchCode = ?");
+        $check->execute([$batchId]);
+        if ($check->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'Batch ID already exists.']);
+            exit;
+        }
+
+        // ── INSERT ────────────────────────────────────────────────────────────
         $stmt = $pdo->prepare("
-            INSERT INTO batches (
-                BatchCode,
-                BatchName,
-                CourseId,
-                StartDate,
-                EndDate,
-                Description,
-                Status,
-                MaxStudents,
-                CurrentStudents,
-                IsActive,
-                CreatedAt
-            ) VALUES (?, ?, ?, ?, ?, ?, 'Active', 30, 0, 1, NOW())
+            INSERT INTO batches
+                (BatchCode, BatchName, School, CourseId,
+                 StartDate, EndDate, MaxStudents, Status, Description, CurrentStudents)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
         ");
-        
         $stmt->execute([
-            $batchId,
-            $batchName,
-            $courseId,
-            $startDate,
-            $endDate,
+            $batchId, $batchName, $school, $courseId,
+            $startDate, $endDate,
+            $maxStudents, $status,
             $description
         ]);
-        
-        $newBatchId = $pdo->lastInsertId();
-        
-        echo json_encode([
-            'success' => true,
-            'batchId' => $newBatchId,
-            'isUpdate' => false
-        ]);
+        echo json_encode(['success' => true, 'message' => 'Batch created.', 'batchId' => $batchId]);
     }
-    
-} catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+
+} catch (PDOException $e) {
+    error_log('save-batch.php error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }
 ?>

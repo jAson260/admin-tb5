@@ -5,12 +5,17 @@ require_once('../../db-connect.php');
 
 header('Content-Type: application/json');
 
-// Accept both 'id' and 'batch_id' for compatibility
-$batchId = $_GET['id'] ?? $_GET['batch_id'] ?? 0;
+$id = intval($_GET['id'] ?? $_GET['batch_id'] ?? 0);
+
+if (!$id) {
+    echo json_encode(['success' => false, 'message' => 'Invalid batch ID.']);
+    exit;
+}
 
 try {
+    // ── Fetch batch info ──────────────────────────────────────────────────────
     $stmt = $pdo->prepare("
-        SELECT 
+        SELECT
             b.Id,
             b.BatchCode,
             b.BatchName,
@@ -22,34 +27,50 @@ try {
             b.Description,
             b.CurrentStudents,
             b.MaxStudents,
-            courses.CourseName,
-            courses.CourseCode,
-            courses.Duration,
-            courses.DurationHours
+            c.CourseName,
+            c.CourseCode,
+            c.Duration,
+            c.DurationHours
         FROM batches b
-        LEFT JOIN courses ON b.CourseId = courses.Id
+        LEFT JOIN courses c ON c.Id = b.CourseId
         WHERE b.Id = ?
     ");
-    
-    $stmt->execute([$batchId]);
+    $stmt->execute([$id]);
     $batch = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($batch) {
-        echo json_encode([
-            'success' => true,
-            'batch' => $batch
-        ]);
-    } else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Batch not found'
-        ]);
+
+    if (!$batch) {
+        echo json_encode(['success' => false, 'message' => 'Batch not found.']);
+        exit;
     }
-    
+
+    // ── Fetch students enrolled in this batch ─────────────────────────────────
+    // FIX: EnrollmentDate → EnrolledAt, ContactNumber → ContactNo
+    $stmtStudents = $pdo->prepare("
+        SELECT
+            s.Id                                        AS StudentId,
+            CONCAT(s.FirstName, ' ', s.LastName)        AS FullName,
+            s.Email,
+            s.ContactNo                                 AS ContactNumber,
+            e.Status                                    AS EnrollmentStatus,
+            DATE_FORMAT(e.EnrolledAt, '%b %d, %Y')      AS EnrolledDate
+        FROM enrollments e
+        JOIN studentinfos s ON s.Id = e.StudentId
+        WHERE e.BatchId = ?
+        ORDER BY s.LastName ASC, s.FirstName ASC
+    ");
+    $stmtStudents->execute([$id]);
+    $students = $stmtStudents->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'success'  => true,
+        'batch'    => $batch,
+        'students' => $students
+    ]);
+
 } catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Database error'
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
 }
 ?>

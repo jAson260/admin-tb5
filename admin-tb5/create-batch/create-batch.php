@@ -273,6 +273,28 @@ include('../sidebar/sidebar.php');
                             </label>
                             <input type="date" class="form-control" id="endDate" required>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Max Students
+                                <span class="text-muted fw-normal small">(Optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-people"></i>
+                                </span>
+                                <input type="number" class="form-control" id="maxStudents"
+                                    placeholder="e.g., 30" min="1" max="9999">
+                            </div>
+                            <small class="text-muted">Leave empty for unlimited</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select class="form-select" id="batchStatus">
+                                <option value="Active">Active</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Description -->
@@ -633,7 +655,15 @@ function saveBatch() {
             hasError = true;
         }
     });
-    if (hasError) { showToast('Please fill in all required fields.', 'danger'); return; }
+
+    // Validate maxStudents if filled
+    const maxStudentsVal = document.getElementById('maxStudents').value;
+    if (maxStudentsVal !== '' && (isNaN(maxStudentsVal) || parseInt(maxStudentsVal) < 1)) {
+        document.getElementById('maxStudents').classList.add('is-invalid');
+        hasError = true;
+    }
+
+    if (hasError) { showToast('Please fill in all required fields correctly.', 'danger'); return; }
 
     const $btn     = $('#saveBatchBtn');
     const origHtml = $btn.html();
@@ -654,6 +684,8 @@ function saveBatch() {
         courseName:  courseText.split(' - ')[1]?.trim() || courseText,
         startDate:   document.getElementById('startDate').value,
         endDate:     document.getElementById('endDate').value,
+        maxStudents: maxStudentsVal !== '' ? parseInt(maxStudentsVal) : null,
+        status:      document.getElementById('batchStatus').value,
         description: document.getElementById('batchDescription').value
     };
 
@@ -709,6 +741,8 @@ function viewBatch(batchId) {
             }
 
             const b = response.batch;
+            const students = response.students || [];
+
             const schoolBadge = b.School === 'TB5'
                 ? `<div class="d-flex align-items-center gap-1">
                         <img src="../assets/img/tb5-logo.png"
@@ -725,8 +759,47 @@ function viewBatch(batchId) {
                             : b.Status === 'Completed' ? 'bg-secondary'
                             : 'bg-warning text-dark';
 
+            // ── Students table rows ───────────────────────────────────────────
+            const studentRows = students.length
+                ? students.map((s, i) => {
+                    const enrollCls = s.EnrollmentStatus === 'Active'    ? 'bg-success'
+                                    : s.EnrollmentStatus === 'Completed' ? 'bg-secondary'
+                                    : s.EnrollmentStatus === 'Dropped'   ? 'bg-danger'
+                                    : 'bg-warning text-dark';
+                    return `
+                        <tr>
+                            <td class="ps-3 text-muted small">${i + 1}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                                        <i class="bi bi-person-fill text-primary small"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold small">${escapeHtml(s.FullName)}</div>
+                                        <small class="text-muted">ID: ${escapeHtml(s.StudentId)}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><small class="text-muted">${escapeHtml(s.Email || '—')}</small></td>
+                            <td><small class="text-muted">${escapeHtml(s.ContactNumber || '—')}</small></td>
+                            <td>
+                                <span class="badge ${enrollCls}">
+                                    ${escapeHtml(s.EnrollmentStatus || 'N/A')}
+                                </span>
+                            </td>
+                            <td><small class="text-muted">${escapeHtml(s.EnrolledDate || '—')}</small></td>
+                        </tr>`;
+                }).join('')
+                : `<tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-people fs-4 d-block mb-2 opacity-50"></i>
+                        No students enrolled in this batch yet.
+                    </td>
+                   </tr>`;
+
             $('#viewBatchContent').html(`
-                <div class="row g-3">
+                <!-- Batch Info -->
+                <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="p-3 rounded-3 border h-100">
                             <div class="text-muted small mb-1">Batch ID</div>
@@ -748,7 +821,9 @@ function viewBatch(batchId) {
                     <div class="col-md-6">
                         <div class="p-3 rounded-3 border h-100">
                             <div class="text-muted small mb-1">Course</div>
-                            <div class="fw-bold small">${escapeHtml(b.CourseCode)} — ${escapeHtml(b.CourseName)}</div>
+                            <div class="fw-bold small">
+                                ${escapeHtml(b.CourseCode)} — ${escapeHtml(b.CourseName)}
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -781,6 +856,42 @@ function viewBatch(batchId) {
                             <div>${escapeHtml(b.Description || 'No description provided.')}</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Students in Batch -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">
+                                <i class="bi bi-people me-2 text-primary"></i>
+                                Enrolled Students
+                                <span class="badge bg-primary rounded-pill ms-1">${students.length}</span>
+                            </h6>
+                            <input type="text" class="form-control form-control-sm w-auto"
+                                id="studentSearchInput"
+                                placeholder="Search student..."
+                                oninput="filterBatchStudents(this.value)">
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+                            <table class="table table-hover align-middle mb-0" id="batchStudentsTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="ps-3" style="width:40px;">#</th>
+                                        <th>Student</th>
+                                        <th>Email</th>
+                                        <th>Contact</th>
+                                        <th>Status</th>
+                                        <th>Enrolled Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batchStudentsTbody">
+                                    ${studentRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>`);
         },
         error: function () {
@@ -789,6 +900,15 @@ function viewBatch(batchId) {
                     <i class="bi bi-wifi-off me-1"></i>Failed to load batch details.
                 </div>`);
         }
+    });
+}
+
+// ─── FILTER STUDENTS IN VIEW MODAL ───────────────────────────────────────────
+function filterBatchStudents(query) {
+    const q = query.toLowerCase();
+    $('#batchStudentsTbody tr').each(function () {
+        const text = $(this).text().toLowerCase();
+        $(this).toggle(text.includes(q));
     });
 }
 
@@ -807,6 +927,10 @@ function editBatch(batchId) {
             document.getElementById('startDate').value         = b.StartDate;
             document.getElementById('endDate').value           = b.EndDate;
             document.getElementById('batchDescription').value  = b.Description || '';
+            // ── Populate new fields ───────────────────────────────────────────
+            document.getElementById('maxStudents').value       = b.MaxStudents || '';
+            document.getElementById('batchStatus').value       = b.Status      || 'Active';
+
             $('#createBatchModalTitle').html('<i class="bi bi-pencil me-2"></i>Edit Batch');
             $('#saveBatchBtn').html('<i class="bi bi-check-circle me-1"></i>Update Batch');
             loadCourses();
@@ -863,6 +987,8 @@ function resetCreateForm() {
     document.getElementById('createBatchForm').reset();
     document.getElementById('batchCourse').disabled    = true;
     document.getElementById('editingBatchRowId').value = '';
+    document.getElementById('maxStudents').value       = '';
+    document.getElementById('batchStatus').value       = 'Active';
     document.querySelectorAll('.is-invalid')
         .forEach(el => el.classList.remove('is-invalid'));
 }
