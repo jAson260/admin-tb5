@@ -1,8 +1,8 @@
 <?php
-// Include header, sidebar, and database connection
-include('../header/header.php');
-include('../sidebar/sidebar.php');
-require_once('../../db-connect.php'); // Your PDO connection file
+session_start();
+require_once('../../includes/rbac-guard.php');
+require_once('../../db-connect.php');
+checkAdmin();
 
 // --- 1. HANDLE FILTERS ---
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';

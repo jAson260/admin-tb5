@@ -1,10 +1,13 @@
 <?php
+
+session_start();
+require_once('../../includes/rbac-guard.php');
+require_once('../../db-connect.php');
+checkAdmin();
+
 // Include header
 include('../header/header.php');
 include('../sidebar/sidebar.php');
-
-// Fix the path to db-connect.php
-require_once('../../db-connect.php');
 
 // Get filter parameters
 $adminFilter = isset($_GET['admin']) ? $_GET['admin'] : '';

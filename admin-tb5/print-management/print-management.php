@@ -1,4 +1,9 @@
 <?php
+session_start();
+require_once('../../includes/rbac-guard.php');
+require_once('../../db-connect.php');
+checkAdmin();
+
 // Include header
 include('../header/header.php');
 include('../sidebar/sidebar.php');

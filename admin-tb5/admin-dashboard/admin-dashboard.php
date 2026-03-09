@@ -2,11 +2,9 @@
 session_start();
 require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
+checkAdmin();
 
-/**
- * Admin Dashboard Controller
- * Handles all data fetching and processing for the admin dashboard
- */
+
 class DashboardController {
     private $pdo;
     private $stats = [];

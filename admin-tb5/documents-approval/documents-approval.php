@@ -1,9 +1,9 @@
 <?php
 
-
 session_start();
 require_once('../../includes/rbac-guard.php');
 require_once('../../db-connect.php');
+checkAdmin();
 
 if (isset($_GET['action']) && $_GET['action'] === 'get_courses') {
     header('Content-Type: application/json');
