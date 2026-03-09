@@ -12,7 +12,7 @@ ErrorDocument 404 /404.php
 ErrorDocument 403 /403.php
 ErrorDocument 500 /500.php
 
-# Login/Logout redirects (for root access)
+# Login/Logout redirects
 RewriteRule ^login/?$ login/login.php [L]
 RewriteRule ^logout/?$ login/logout.php [L]
 
@@ -20,11 +20,11 @@ RewriteRule ^logout/?$ login/logout.php [L]
 RewriteRule ^dashboard/?$ dashboard/dashboard.php [L]
 RewriteRule ^admin/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
 
-# Enrollment Pages - Clean URL Redirects
+# Enrollment Pages
 RewriteRule ^enrollment/?$ enrollment/enrollment.php [L]
 RewriteRule ^enrollment/step-2/?$ enrollment/enrollment_page2.php [L]
 
-# Admin Panel Pages - Clean URL Redirects
+# Admin Panel Pages
 RewriteRule ^admin-tb5/login/?$ admin-tb5/login/login.php [L]
 RewriteRule ^admin-tb5/logout/?$ admin-tb5/login/logout.php [L]
 RewriteRule ^admin-tb5/admin-dashboard/?$ admin-tb5/admin-dashboard/admin-dashboard.php [L]
@@ -55,8 +55,8 @@ RewriteCond %{REQUEST_URI} !^/enrollment/upload-documents-handler\.php$
 RewriteCond %{REQUEST_URI} !^/admin-tb5/account-management/(get-accounts|get-account-details|get-statistics|change-password|delete-account|export-accounts|approve-account|reject-account|toggle-status|add-account|assign-course-batch|get-batches-by-course)\.php$
 RewriteCond %{REQUEST_URI} !^/admin-tb5/documents-approval/(get-documents|get-courses-filter|fetch_notifications|approve-document|reject-document)\.php$
 RewriteCond %{REQUEST_URI} !^/admin-tb5/course-creation/(get-courses|get-course-details|save-course|delete-course|toggle-course-status)\.php$
-RewriteCond %{REQUEST_URI} !^/admin-tb5/tor-grades/(get-students|get-student-info|get-student-courses|get-tor-records|get-tor-statistics|generate-tor|view-tor|download-tor|delete-tor|regenerate-tor|create-directories)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/tor-grades/(get-students|get-student-info|get-student-courses|get-tor-records|get-tor-statistics|generate-tor|view-tor|download-tor|delete-tor|regenerate-tor|create-directories|get-all-batches|get-all-courses|get-course-subjects|get-student-batches|get-students-by-filter|get-tor-students|generate-tor-csv|generate-tor-pdf|download-tor-csv|delete-tor)\.php$
 RewriteCond %{REQUEST_URI} !^/admin-tb5/create-batch/(get-batches|get-batch-statistics|get-courses-by-school|save-batch|delete-batch|get-batch-details)\.php$
-RewriteCond %{REQUEST_URI} !^/admin-tb5/subject-management/(get-subjects|get-subject-details|save-subject|delete-subject|toggle-subject-status)\.php$
+RewriteCond %{REQUEST_URI} !^/admin-tb5/subject-management/(get-subjects|get-subject-details|save-subject|delete-subject|toggle-subject-status|get-courses-by-school|save-subjects-multi)\.php$
 RewriteCond %{REQUEST_URI} !(admin-dashboard|logs|student-records|account-management|print-management|documents-approval|tor-grades|course-creation|create-batch|subject-management|profile|enrollment)\.php
 RewriteRule ^(.*)\.php$ /$1 [R=301,L]

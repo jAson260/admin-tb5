@@ -1,6 +1,8 @@
 {
     "require": {
         "guzzlehttp/guzzle": "^7.10",
-        "tecnickcom/tcpdf": "^6.10"
+        "tecnickcom/tcpdf": "^6.10",
+        "phpoffice/phpspreadsheet": "^5.5",
+        "mpdf/mpdf": "^8.2"
     }
 }
