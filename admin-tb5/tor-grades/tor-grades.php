@@ -420,7 +420,7 @@ include('../sidebar/sidebar.php');
                                         </button>
                                     </div>
                                     <small class="text-muted" style="font-size:0.7rem;">
-                                        <i class="bi bi-info-circle me-1"></i>Auto-fills subjects 91–98
+                                        <i class="bi bi-info-circle me-1"></i>Auto-fills subjects 94–98
                                     </small>
                                 </div>
                                 <div class="col-md-2">
@@ -733,21 +733,17 @@ function randomizeGrades(targetFinal) {
     rows.each(function () {
         const i = $(this).data('index');
 
-        // Random whole number theoretical between 91–98
-        const th = Math.floor(Math.random() * (98 - 91 + 1)) + 91;
+        // ── Random whole number theoretical between 94–98 ─────────────────────
+        const th = Math.floor(Math.random() * (98 - 94 + 1)) + 94;
 
-        // Derive practical: (target - th*0.3) / 0.7 + small jitter ±1
+        // ── Derive practical with jitter, clamped 94–98 ───────────────────────
         const jitter = Math.floor(Math.random() * 3) - 1; // –1, 0, or +1
         let pr = Math.round(((target - (th * 0.3)) / 0.7) + jitter);
+        pr = Math.min(98, Math.max(94, pr));
 
-        // Clamp between 91–98
-        pr = Math.min(98, Math.max(91, pr));
-
-        // Fill inputs
         $(`.grade-theoretical[data-row="${i}"]`).val(th);
         $(`.grade-practical[data-row="${i}"]`).val(pr);
 
-        // Per-row final as whole number & remarks
         const fin = Math.round((th * 0.3) + (pr * 0.7));
         const rem = fin >= 85 ? 'Competent' : 'Not Yet Competent';
         $(`#final_${i}`).text(fin);
@@ -756,7 +752,6 @@ function randomizeGrades(targetFinal) {
         );
     });
 
-    // Recalc overall after all rows filled
     recalcOverall();
 }
 
@@ -1065,7 +1060,7 @@ function generateRandomizedGradesPerStudent(targetFinal) {
         const th = Math.floor(Math.random() * (98 - 91 + 1)) + 91;
 
         // Derive practical with fresh jitter for THIS student
-        const jitter = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
+        const jitter = Math.floor(Math.random() * 3) - 1; // –1, 0, or +1
         let pr = Math.round(((target - (th * 0.3)) / 0.7) + jitter);
         pr = Math.min(98, Math.max(91, pr));
 
@@ -1298,28 +1293,15 @@ function submitTOR(endpoint, defaultFilename, mimeType, $btn) {
 
     const targetFinal = parseFloat(finalGrade) || parseFloat(average) || 90;
 
-    // ── Build per-student grades — ALWAYS randomize per student independently ─
-    // Even single student gets a fresh set from the form
-    const perStudentGrades = selectedIds.map(function(sid, index) {
+    // ── Build per-student grades ───────────────────────────────────────────────
+    // Each student gets buildRandomizedGrades() called INDEPENDENTLY
+    // so Math.random() runs fresh for every student
+    const perStudentGrades = selectedIds.map(function () {
         if (selectedIds.length === 1) {
-            // Single student: use exact grades typed into the form
-            return collectSubjectGrades();
+            return collectSubjectGrades(); // use exact grades from form
         }
-        // Multiple students: each gets independently randomized grades
-        // buildRandomizedGrades() uses Math.random() fresh each call
-        return buildRandomizedGrades(targetFinal);
+        return buildRandomizedGrades(targetFinal); // fresh random per student
     });
-
-    // ── Quick sanity check: log first 2 students to confirm they differ ───────
-    if (selectedIds.length > 1 && perStudentGrades.length > 1) {
-        const s0 = perStudentGrades[0].map(g => g.final).join(',');
-        const s1 = perStudentGrades[1].map(g => g.final).join(',');
-        if (s0 === s1) {
-            console.warn('⚠ perStudentGrades[0] and [1] are identical — randomization may have failed');
-        } else {
-            console.log('✓ Grades differ between students:', s0, '|', s1);
-        }
-    }
 
     const payload = {
         student_ids:           selectedIds,
@@ -1334,14 +1316,6 @@ function submitTOR(endpoint, defaultFilename, mimeType, $btn) {
         per_student_grades:    perStudentGrades,
         randomize_per_student: selectedIds.length > 1
     };
-
-    // ── DEBUG: log what is being sent ─────────────────────────────────────────
-    console.log('Sending payload:', JSON.stringify({
-        student_count: payload.student_ids.length,
-        per_student_grades_count: payload.per_student_grades.length,
-        sample_student_0: payload.per_student_grades[0]?.slice(0,2),
-        sample_student_1: payload.per_student_grades[1]?.slice(0,2)
-    }, null, 2));
 
     const origHtml = $btn.html();
     $btn.prop('disabled', true)
@@ -1423,11 +1397,10 @@ function buildRandomizedGrades(targetFinal) {
 
     const grades = [];
 
-    // ── Determine a unique per-student grade band ─────────────────────────────
-    // Instead of deriving from targetFinal, pick a random band offset per student
-    // so each student gets genuinely different grades
-    const bandOffset = Math.floor(Math.random() * 7) - 3; // -3 to +3 per student
-    const studentTarget = Math.min(100, Math.max(85, target + bandOffset));
+    // ── Unique per-student band offset ────────────────────────────────────────
+    const seed         = Math.random();
+    const bandOffset   = Math.round((seed - 0.5) * 4); // -2 to +2 (tighter — keeps within 94–98)
+    const studentTarget = Math.min(98, Math.max(94, target + bandOffset));
 
     rows.each(function () {
         const i    = $(this).data('index');
@@ -1435,15 +1408,16 @@ function buildRandomizedGrades(targetFinal) {
         const name = $(this).find('td:eq(1)').text().trim();
         const hrs  = $(this).find('td:eq(2)').text().replace(' hrs', '').trim();
 
-        // ── Fully independent random grades per subject per student ───────────
-        // Range varies per subject: some students get higher/lower per subject
-        const thMin = Math.max(85, studentTarget - 5);
-        const thMax = Math.min(100, studentTarget + 3);
-        const th    = Math.floor(Math.random() * (thMax - thMin + 1)) + thMin;
+        // ── Per-subject variance, clamped to 94–98 ────────────────────────────
+        const subjectVariance = Math.round((Math.random() - 0.5) * 4); // -2 to +2
 
-        const prMin = Math.max(85, studentTarget - 4);
-        const prMax = Math.min(100, studentTarget + 4);
-        const pr    = Math.floor(Math.random() * (prMax - prMin + 1)) + prMin;
+        const th = Math.min(98, Math.max(94,
+            Math.round(studentTarget + subjectVariance + (Math.random() * 2 - 1))
+        ));
+
+        const pr = Math.min(98, Math.max(94,
+            Math.round(studentTarget + (Math.random() * 4 - 2))
+        ));
 
         const fin = Math.round((th * 0.3) + (pr * 0.7));
         const rem = fin >= 85 ? 'Competent' : 'Not Yet Competent';
@@ -1492,28 +1466,15 @@ function submitTOR(endpoint, defaultFilename, mimeType, $btn) {
 
     const targetFinal = parseFloat(finalGrade) || parseFloat(average) || 90;
 
-    // ── Build per-student grades — ALWAYS randomize per student independently ─
-    // Even single student gets a fresh set from the form
-    const perStudentGrades = selectedIds.map(function(sid, index) {
+    // ── Build per-student grades ───────────────────────────────────────────────
+    // Each student gets buildRandomizedGrades() called INDEPENDENTLY
+    // so Math.random() runs fresh for every student
+    const perStudentGrades = selectedIds.map(function () {
         if (selectedIds.length === 1) {
-            // Single student: use exact grades typed into the form
-            return collectSubjectGrades();
+            return collectSubjectGrades(); // use exact grades from form
         }
-        // Multiple students: each gets independently randomized grades
-        // buildRandomizedGrades() uses Math.random() fresh each call
-        return buildRandomizedGrades(targetFinal);
+        return buildRandomizedGrades(targetFinal); // fresh random per student
     });
-
-    // ── Quick sanity check: log first 2 students to confirm they differ ───────
-    if (selectedIds.length > 1 && perStudentGrades.length > 1) {
-        const s0 = perStudentGrades[0].map(g => g.final).join(',');
-        const s1 = perStudentGrades[1].map(g => g.final).join(',');
-        if (s0 === s1) {
-            console.warn('⚠ perStudentGrades[0] and [1] are identical — randomization may have failed');
-        } else {
-            console.log('✓ Grades differ between students:', s0, '|', s1);
-        }
-    }
 
     const payload = {
         student_ids:           selectedIds,
@@ -1528,14 +1489,6 @@ function submitTOR(endpoint, defaultFilename, mimeType, $btn) {
         per_student_grades:    perStudentGrades,
         randomize_per_student: selectedIds.length > 1
     };
-
-    // ── DEBUG: log what is being sent ─────────────────────────────────────────
-    console.log('Sending payload:', JSON.stringify({
-        student_count: payload.student_ids.length,
-        per_student_grades_count: payload.per_student_grades.length,
-        sample_student_0: payload.per_student_grades[0]?.slice(0,2),
-        sample_student_1: payload.per_student_grades[1]?.slice(0,2)
-    }, null, 2));
 
     const origHtml = $btn.html();
     $btn.prop('disabled', true)

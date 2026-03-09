@@ -1,4 +1,4 @@
-    <?php
+<?php
     // filepath: c:\laragon\www\admin-tb5\upload\upload.php
     session_start();
 
@@ -67,12 +67,19 @@
                         $oldFile = $targetDir . $oldData[$fieldName];
                         if (file_exists($oldFile)) { unlink($oldFile); }
                     }
-                    
+
                     $fileName = strtolower(str_replace(['Path', '_'], '', $fieldName)) . '_' . $_SESSION['user_id'] . '_' . time() . '.' . $ext;
-                    
+
                     if (move_uploaded_file($file['tmp_name'], $targetDir . $fileName)) {
-                        $statusField = str_replace('Path', 'Status', $fieldName);
-                        $updateSql = "UPDATE documents SET $fieldName = ?, $statusField = 'pending' WHERE StudentInfoId = ?";
+                        $statusField  = str_replace('Path', 'Status',  $fieldName);
+                        // ── Derive remarks column and reset it on resubmit ────
+                        $remarksField = str_replace('Path', 'Remarks', $fieldName);
+
+                        $updateSql = "UPDATE documents 
+                                      SET $fieldName    = ?, 
+                                          $statusField  = 'pending',
+                                          $remarksField = NULL
+                                      WHERE StudentInfoId = ?";
                         $stmt = $pdo->prepare($updateSql);
                         if ($stmt->execute([$fileName, $_SESSION['user_id']])) {
                             $_SESSION['upload_success'] = true;
@@ -107,35 +114,40 @@
     $groupedRequirements = [
         [
             "display_name" => "Academic Record (TOR / DIPLOMA / Form 137 / ALS)",
-            "fields" => ["TORPath", "DiplomaPath", "Form137Path", "ALSCertificatePath"],
-            "field_labels" => ["TORPath" => "TOR", "DiplomaPath" => "Diploma", "Form137Path" => "Form 137", "ALSCertificatePath" => "ALS Cert"],
-            "primary_field" => "TORPath", 
-            "status_fields" => ["TORStatus", "DiplomaStatus", "Form137Status", "ALSCertificateStatus"], 
-            "icon" => "fa-graduation-cap"
+            "fields"        => ["TORPath", "DiplomaPath", "Form137Path", "ALSCertificatePath"],
+            "field_labels"  => ["TORPath" => "TOR", "DiplomaPath" => "Diploma", "Form137Path" => "Form 137", "ALSCertificatePath" => "ALS Cert"],
+            "primary_field" => "TORPath",
+            "status_fields" => ["TORStatus", "DiplomaStatus", "Form137Status", "ALSCertificateStatus"],
+            // ── Map each field to its remarks column ──────────────────────────
+            "remarks_fields" => ["TORPath" => "TORRemarks", "DiplomaPath" => "DiplomaRemarks", "Form137Path" => "Form137Remarks", "ALSCertificatePath" => "ALSCertificateRemarks"],
+            "icon"          => "fa-graduation-cap"
         ],
         [
-            "display_name" => "Birth Identity (PSA / BIRTH CERTIFICATE)",
-            "fields" => ["PSAPath"],
-            "field_labels" => ["PSAPath" => "PSA Certificate"],
+            "display_name"  => "Birth Identity (PSA / BIRTH CERTIFICATE)",
+            "fields"        => ["PSAPath"],
+            "field_labels"  => ["PSAPath" => "PSA Certificate"],
             "primary_field" => "PSAPath",
             "status_fields" => ["PSAStatus"],
-            "icon" => "fa-baby"
+            "remarks_fields" => ["PSAPath" => "PSARemarks"],
+            "icon"          => "fa-baby"
         ],
         [
-            "display_name" => "Status Credential (MARRIAGE CERTIFICATE)",
-            "fields" => ["MarriageCertificatePath"],
-            "field_labels" => ["MarriageCertificatePath" => "Marriage Certificate"],
+            "display_name"  => "Status Credential (MARRIAGE CERTIFICATE)",
+            "fields"        => ["MarriageCertificatePath"],
+            "field_labels"  => ["MarriageCertificatePath" => "Marriage Certificate"],
             "primary_field" => "MarriageCertificatePath",
             "status_fields" => ["MarriageCertificateStatus"],
-            "icon" => "fa-ring"
+            "remarks_fields" => ["MarriageCertificatePath" => "MarriageCertificateRemarks"],
+            "icon"          => "fa-ring"
         ],
         [
-            "display_name" => "Barangay Documents (Indigency / Residency)",
-            "fields" => ["BarangayIndigencyPath", "CertificateOfResidencyPath"],
-            "field_labels" => ["BarangayIndigencyPath" => "Brgy Indigency", "CertificateOfResidencyPath" => "Brgy Residency"],
+            "display_name"  => "Barangay Documents (Indigency / Residency)",
+            "fields"        => ["BarangayIndigencyPath", "CertificateOfResidencyPath"],
+            "field_labels"  => ["BarangayIndigencyPath" => "Brgy Indigency", "CertificateOfResidencyPath" => "Brgy Residency"],
             "primary_field" => "BarangayIndigencyPath",
             "status_fields" => ["BarangayIndigencyStatus", "CertificateOfResidencyStatus"],
-            "icon" => "fa-home"
+            "remarks_fields" => ["BarangayIndigencyPath" => "BarangayIndigencyRemarks", "CertificateOfResidencyPath" => "CertificateOfResidencyRemarks"],
+            "icon"          => "fa-home"
         ]
     ];
 
@@ -185,73 +197,129 @@
                             </thead>
                             <tbody>
                                 <?php foreach ($groupedRequirements as $rowGroup): 
-                                    $subDocsList = []; 
-                                    $rejectedItems = []; // Array to track specifically rejected items
+                                    $subDocsList = [];
+                                    $rejectedItems = [];
                                     $hasUploaded = false;
                                     
                                     foreach ($rowGroup['fields'] as $key => $field) {
                                         if (!empty($docData[$field]) && $docData[$field] !== 'None') {
-                                            $label = $rowGroup['field_labels'][$field];
-                                            $subStatusField = $rowGroup['status_fields'][$key];
-                                            $currentIndivStatus = strtolower($docData[$subStatusField] ?? '');
+                                            $label           = $rowGroup['field_labels'][$field];
+                                            // ── Fix: use $key to get matching status field ────────
+                                            $subStatusField  = $rowGroup['status_fields'][$key];
+                                            $remarksField    = $rowGroup['remarks_fields'][$field] ?? null;
+                                            $currentStatus   = strtolower($docData[$subStatusField] ?? 'pending');
+                                            // ── Get per-document rejection reason ────────────────
+                                            $currentRemarks  = ($remarksField && !empty($docData[$remarksField]))
+                                                             ? $docData[$remarksField] : null;
 
                                             $subDocsList[] = [
-                                                "name" => $label,
-                                                "file" => $docData[$field],
-                                                "status" => $currentIndivStatus
+                                                "name"    => $label,
+                                                "file"    => $docData[$field],
+                                                "status"  => $currentStatus,
+                                                "remarks" => $currentRemarks
                                             ];
 
-                                            if ($currentIndivStatus === 'rejected') {
-                                                $rejectedItems[] = $label;
+                                            if ($currentStatus === 'rejected') {
+                                                $rejectedItems[] = [
+                                                    'name'    => $label,
+                                                    'remarks' => $currentRemarks ?? 'No reason provided'
+                                                ];
                                             }
 
                                             $hasUploaded = true;
                                         }
                                     }
 
-                                    if (!$hasUploaded) continue; 
+                                    if (!$hasUploaded) continue;
 
-                                    $groupStatus = "Not Uploaded"; $approvedFound = false; $rejectedFound = false; $pendingFound = false;
+                                    $groupStatus = "Not Uploaded";
+                                    $approvedFound = false;
+                                    $rejectedFound = false;
+                                    $pendingFound  = false;
+
                                     foreach ($rowGroup['status_fields'] as $sf) {
                                         $curr = strtolower($docData[$sf] ?? '');
                                         if ($curr === 'rejected') { $rejectedFound = true; break; }
-                                        if ($curr === 'approved') { $approvedFound = true; }
-                                        if ($curr === 'pending') { $pendingFound = true; }
+                                        if ($curr === 'approved') $approvedFound = true;
+                                        if ($curr === 'pending')  $pendingFound  = true;
                                     }
-                                    if ($rejectedFound) { $groupStatus = "Rejected"; }
-                                    elseif ($approvedFound) { $groupStatus = "Approved"; }
-                                    elseif ($pendingFound) { $groupStatus = "Pending"; }
 
-                                    $badge = ($groupStatus == 'Approved') ? 'bg-success' : (($groupStatus == 'Rejected') ? 'bg-danger' : ('bg-warning text-dark'));
+                                    if ($rejectedFound)      $groupStatus = "Rejected";
+                                    elseif ($approvedFound)  $groupStatus = "Approved";
+                                    elseif ($pendingFound)   $groupStatus = "Pending";
+
+                                    $badge = ($groupStatus === 'Approved') ? 'bg-success'
+                                           : ($groupStatus === 'Rejected'  ? 'bg-danger'
+                                           : ($groupStatus === 'Pending'   ? 'bg-warning text-dark'
+                                           : 'bg-secondary'));
                                 ?>
                                 <tr>
                                     <td class="ps-4 py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-light p-2 rounded text-royal me-3 shadow-sm"><i class="fas <?php echo $rowGroup['icon']; ?> fa-fw"></i></div>
-                                            <div><span class="fw-bold text-dark d-block" style="font-size: 13.5px;"><?php echo $rowGroup['display_name']; ?></span>
-                                            <?php if ($groupStatus === 'Rejected' && !empty($rejectedItems)): ?>
-                                                <!-- REJECTION DETAILS LOGIC -->
-                                                <div class="mt-1 bg-danger bg-opacity-10 border border-danger border-opacity-10 rounded px-2 py-1" style="display:inline-block">
-                                                    <small class="text-danger fw-bold" style="font-size: 10px;">REJECTED: <?php echo implode(", ", $rejectedItems); ?></small>
-                                                </div>
-                                            <?php else: ?>
-                                                <small class="text-muted italic"><?php echo count($subDocsList); ?> Document(s) available</small>
-                                            <?php endif; ?>
+                                        <div class="d-flex align-items-start">
+                                            <div class="bg-light p-2 rounded text-royal me-3 shadow-sm mt-1">
+                                                <i class="fas <?php echo $rowGroup['icon']; ?> fa-fw"></i>
+                                            </div>
+                                            <div>
+                                                <span class="fw-bold text-dark d-block" style="font-size:13.5px;">
+                                                    <?php echo $rowGroup['display_name']; ?>
+                                                </span>
+                                                <small class="text-muted"><?php echo count($subDocsList); ?> Document(s) available</small>
+
+                                                <?php if ($groupStatus === 'Rejected' && !empty($rejectedItems)): ?>
+                                                    <?php foreach ($rejectedItems as $rej): ?>
+                                                    <div class="mt-1 d-flex align-items-start gap-1 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded px-2 py-1">
+                                                        <i class="fas fa-exclamation-circle text-danger mt-1" style="font-size:10px;"></i>
+                                                        <small class="text-danger" style="font-size:10px;">
+                                                            <strong><?php echo htmlspecialchars($rej['name']); ?>:</strong>
+                                                            <?php echo htmlspecialchars($rej['remarks']); ?>
+                                                        </small>
+                                                    </div>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
-                                    <td><span class="badge <?php echo $badge; ?> rounded-pill px-3 py-2 shadow-sm text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;"><?php echo $groupStatus; ?></span></td>
+                                    <td>
+                                        <span class="badge <?php echo $badge; ?> rounded-pill px-3 py-2 shadow-sm text-uppercase"
+                                            style="font-size:9px;letter-spacing:0.5px;">
+                                            <?php echo $groupStatus; ?>
+                                        </span>
+                                    </td>
                                     <td class="text-center">
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-link text-royal p-0" type="button" data-bs-toggle="dropdown"><i class="fas fa-eye fa-lg"></i></button>
+                                            <button class="btn btn-sm btn-link text-royal p-0"
+                                                type="button" data-bs-toggle="dropdown">
+                                                <i class="fas fa-eye fa-lg"></i>
+                                            </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-2 py-2">
-                                                <li class="dropdown-header small text-uppercase fw-bold pb-1">Check Documents</li>
+                                                <li class="dropdown-header small text-uppercase fw-bold pb-1">
+                                                    Check Documents
+                                                </li>
                                                 <?php foreach ($subDocsList as $sub): ?>
                                                 <li>
-                                                    <button class="dropdown-item d-flex justify-content-between align-items-center py-2" onclick="viewDocument('../uploads/documents/<?php echo $sub['file']; ?>', '<?php echo addslashes($sub['name']); ?>')">
-                                                        <span><i class="far fa-file-alt me-2 opacity-50"></i><?php echo $sub['name']; ?></span>
-                                                        <?php if($sub['status'] === 'rejected'): ?>
-                                                            <i class="fas fa-exclamation-circle text-danger ms-2" title="Rejected File"></i>
+                                                    <button class="dropdown-item py-2"
+                                                        onclick="viewDocument('../uploads/documents/<?php echo $sub['file']; ?>',
+                                                                 '<?php echo addslashes($sub['name']); ?>')">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span>
+                                                                <i class="far fa-file-alt me-2 opacity-50"></i>
+                                                                <?php echo $sub['name']; ?>
+                                                            </span>
+                                                            <?php if ($sub['status'] === 'rejected'): ?>
+                                                                <i class="fas fa-exclamation-circle text-danger ms-2"
+                                                                   title="<?php echo htmlspecialchars($sub['remarks'] ?? 'Rejected'); ?>">
+                                                                </i>
+                                                            <?php elseif ($sub['status'] === 'approved'): ?>
+                                                                <i class="fas fa-check-circle text-success ms-2"></i>
+                                                            <?php else: ?>
+                                                                <i class="fas fa-clock text-warning ms-2"></i>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <?php if ($sub['status'] === 'rejected' && $sub['remarks']): ?>
+                                                            <div class="text-danger mt-1" style="font-size:10px;white-space:normal;">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                <?php echo htmlspecialchars($sub['remarks']); ?>
+                                                            </div>
                                                         <?php endif; ?>
                                                     </button>
                                                 </li>
@@ -260,14 +328,28 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <?php if ($groupStatus == 'Rejected'): ?>
-                                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle shadow-sm resubmit-btn" data-name="<?php echo htmlspecialchars($rowGroup['display_name']); ?>" data-fields="<?php echo htmlspecialchars(json_encode($rowGroup['fields'])); ?>" data-labels="<?php echo htmlspecialchars(json_encode($rowGroup['field_labels'])); ?>" data-docs="<?php echo htmlspecialchars(json_encode($subDocsList)); ?>" title="Resubmit"><i class="fas fa-redo"></i></button>
-                                        <?php elseif ($groupStatus == 'Approved'): ?>
-                                            <span class="text-success"><i class="fas fa-check-circle fa-lg"></i></span>
-                                        <?php elseif ($groupStatus == 'Pending'): ?>
+                                        <?php if ($groupStatus === 'Rejected'): ?>
+                                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle shadow-sm resubmit-btn"
+                                                data-name="<?php echo htmlspecialchars($rowGroup['display_name']); ?>"
+                                                data-fields="<?php echo htmlspecialchars(json_encode($rowGroup['fields'])); ?>"
+                                                data-labels="<?php echo htmlspecialchars(json_encode($rowGroup['field_labels'])); ?>"
+                                                data-docs="<?php echo htmlspecialchars(json_encode($subDocsList)); ?>"
+                                                title="Resubmit">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                        <?php elseif ($groupStatus === 'Approved'): ?>
+                                            <span class="text-success">
+                                                <i class="fas fa-check-circle fa-lg"></i>
+                                            </span>
+                                        <?php elseif ($groupStatus === 'Pending'): ?>
                                             <i class="fas fa-clock text-warning fa-lg"></i>
                                         <?php else: ?>
-                                            <button class="btn btn-sm btn-outline-primary border-0 rounded-circle shadow-sm" onclick="openUploadModal('<?php echo addslashes($rowGroup['display_name']); ?>', 0, '<?php echo $rowGroup['primary_field']; ?>')" title="Update"><i class="fas fa-sync-alt"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary border-0 rounded-circle shadow-sm"
+                                                onclick="openUploadModal('<?php echo addslashes($rowGroup['display_name']); ?>',
+                                                         0, '<?php echo $rowGroup['primary_field']; ?>')"
+                                                title="Upload">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

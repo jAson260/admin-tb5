@@ -86,13 +86,13 @@ try {
         $enrolled_at        = $courseData['EnrolledAt'] ? date('M d, Y', strtotime($courseData['EnrolledAt'])) : 'N/A';
     }
 
-    // Count uploaded documents
+    // ── Count uploaded documents — only student-uploaded docs ─────────────────
     $docsStmt = $pdo->prepare("
         SELECT 
-            (CASE WHEN PSAPath IS NOT NULL AND PSAPath != '' THEN 1 ELSE 0 END) +
-            (CASE WHEN TORPath IS NOT NULL AND TORPath != '' THEN 1 ELSE 0 END) +
-            (CASE WHEN DiplomaPath IS NOT NULL AND DiplomaPath != '' THEN 1 ELSE 0 END) +
-            (CASE WHEN Form137Path IS NOT NULL AND Form137Path != '' THEN 1 ELSE 0 END)
+            (CASE WHEN PSAPath                IS NOT NULL AND PSAPath                != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN DiplomaPath            IS NOT NULL AND DiplomaPath            != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN Form137Path            IS NOT NULL AND Form137Path            != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN MarriageCertificatePath IS NOT NULL AND MarriageCertificatePath != '' THEN 1 ELSE 0 END)
             AS uploaded_count
         FROM documents
         WHERE StudentInfoId = ?
@@ -100,7 +100,7 @@ try {
     ");
     $docsStmt->execute([$_SESSION['user_id']]);
     $docsData = $docsStmt->fetch(PDO::FETCH_ASSOC);
-    
+
     if ($docsData !== false) {
         $docs_uploaded = (int)$docsData['uploaded_count'];
     }
@@ -314,8 +314,11 @@ try {
                                     <span class="ms-auto badge bg-light text-success fw-bold">Done</span>
                                 <?php else: ?>
                                     <div class="step-dot step-active"></div>
-                                    <span>Update PSA, TOR, & Diploma</span>
-                                    <span class="ms-auto"><a href="<?php echo $root; ?>upload/upload.php" class="text-royal small fw-bold">Submit Files</a></span>
+                                    <span>Upload PSA, Form 137, Diploma & Marriage Certificate</span>
+                                    <span class="ms-auto">
+                                        <a href="<?php echo $root; ?>upload/upload.php"
+                                            class="text-royal small fw-bold">Submit Files</a>
+                                    </span>
                                 <?php endif; ?>
                             </li>
                             <li class="list-group-item d-flex align-items-center border-0 px-0">
