@@ -1,5 +1,6 @@
 <?php
 
+
 session_start();
 require_once('../../db-connect.php');
 
@@ -25,12 +26,15 @@ try {
             b.EndDate,
             b.Status,
             b.Description,
-            b.CurrentStudents,
             b.MaxStudents,
             c.CourseName,
             c.CourseCode,
             c.Duration,
-            c.DurationHours
+            c.DurationHours,
+            (
+                SELECT COUNT(*) FROM enrollments e
+                WHERE e.BatchId = b.Id AND e.Status IN ('Enrolled','Ongoing')
+            ) AS CurrentStudents
         FROM batches b
         LEFT JOIN courses c ON c.Id = b.CourseId
         WHERE b.Id = ?
@@ -43,8 +47,7 @@ try {
         exit;
     }
 
-    // ── Fetch students enrolled in this batch ─────────────────────────────────
-    // FIX: EnrollmentDate → EnrolledAt, ContactNumber → ContactNo
+    // ── Fetch students actively enrolled in this batch ────────────────────────
     $stmtStudents = $pdo->prepare("
         SELECT
             s.Id                                        AS StudentId,
@@ -55,7 +58,7 @@ try {
             DATE_FORMAT(e.EnrolledAt, '%b %d, %Y')      AS EnrolledDate
         FROM enrollments e
         JOIN studentinfos s ON s.Id = e.StudentId
-        WHERE e.BatchId = ?
+        WHERE e.BatchId = ? AND e.Status IN ('Enrolled','Ongoing')
         ORDER BY s.LastName ASC, s.FirstName ASC
     ");
     $stmtStudents->execute([$id]);

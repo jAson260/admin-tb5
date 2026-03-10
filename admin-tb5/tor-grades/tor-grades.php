@@ -187,7 +187,7 @@ include('../sidebar/sidebar.php');
 <div class="modal fade" id="generateTORModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="modal-header" style="background: #4169E1;">
                 <h5 class="modal-title text-white fw-bold">
                     <i class="bi bi-file-earmark-plus me-2"></i>Generate TOR / Transcript of Records
                 </h5>
@@ -575,7 +575,7 @@ $(document).ready(function () {
             }
         ],
         order: [[3, 'desc']],
-        pageLength: 25,
+        pageLength: 10, // Default to 10 entries
         responsive: true,
         dom: 'rt',
         drawCallback: function() {

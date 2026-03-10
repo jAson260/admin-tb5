@@ -84,11 +84,14 @@ try {
             b.StartDate,
             b.EndDate,
             b.Status,
-            b.CurrentStudents,
             b.MaxStudents,
             b.Description,
             courses.CourseCode,
-            courses.CourseName
+            courses.CourseName,
+            (
+                SELECT COUNT(*) FROM enrollments e
+                WHERE e.BatchId = b.Id AND e.Status IN ('Enrolled','Ongoing')
+            ) AS CurrentStudents
         $baseQuery
         WHERE $whereClause
         ORDER BY $orderColumn $orderDirection

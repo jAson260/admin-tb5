@@ -7,60 +7,76 @@ checkAdmin();
 
 header('Content-Type: application/json');
 
-$data      = json_decode(file_get_contents('php://input'), true);
-$studentId = intval($data['id']     ?? 0);
-$fieldType = trim($data['type']     ?? '');  // e.g. "PSA Birth Certificate"
-$reason    = trim($data['reason']   ?? 'Document rejected by admin');
+$data = json_decode(file_get_contents('php://input'), true);
 
-// ── Map document type label → column name ─────────────────────────────────────
-$fieldMap = [
-    'PSA Birth Certificate'        => 'PSA',
-    'Diploma'                      => 'Diploma',
-    'Form 137'                     => 'Form137',
-    'Marriage Certificate'         => 'MarriageCertificate',
-    'ALS Certificate'              => 'ALSCertificate',
-    'Barangay Indigency'           => 'BarangayIndigency',
-    'Certificate of Residency'     => 'CertificateOfResidency',
-    'Transcript of Records (TOR)'  => 'TOR',
-];
-
-if (!$studentId || !isset($fieldMap[$fieldType])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid request. Type: ' . $fieldType]);
+if (!$data || json_last_error() !== JSON_ERROR_NONE) {
+    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
     exit;
 }
 
-$col          = $fieldMap[$fieldType];
-$statusField  = "{$col}Status";   // e.g. PSAStatus
-$remarksField = "{$col}Remarks";  // e.g. PSARemarks
+$id     = intval($data['id']     ?? 0);
+$type   = trim($data['type']     ?? '');
+$reason = trim($data['reason']   ?? '');
+
+if (!$id || !$type) {
+    echo json_encode(['success' => false, 'message' => 'Missing document ID or type.']);
+    exit;
+}
+
+if (!$reason) {
+    echo json_encode(['success' => false, 'message' => 'Rejection reason is required.']);
+    exit;
+}
+
+// ── Exact match from get-documents.php $documentFields ───────────────────────
+$fieldMap = [
+    'PSA Birth Certificate'    => 'PSAStatus',
+    'Transcript of Records'    => 'TORStatus',
+    'Diploma'                  => 'DiplomaStatus',
+    'Form 137'                 => 'Form137Status',
+    'ALS Certificate'          => 'ALSCertificateStatus',
+    'Marriage Certificate'     => 'MarriageCertificateStatus',
+    'Barangay Indigency'       => 'BarangayIndigencyStatus',
+    'Certificate of Residency' => 'CertificateOfResidencyStatus',
+];
+
+$remarksMap = [
+    'PSA Birth Certificate'    => 'PSARemarks',
+    'Transcript of Records'    => 'Remarks',
+    'Diploma'                  => 'DiplomaRemarks',
+    'Form 137'                 => 'Form137Remarks',
+    'ALS Certificate'          => 'ALSCertificateRemarks',
+    'Marriage Certificate'     => 'MarriageCertificateRemarks',
+    'Barangay Indigency'       => 'BarangayIndigencyRemarks',
+    'Certificate of Residency' => 'CertificateOfResidencyRemarks',
+];
+
+if (!isset($fieldMap[$type])) {
+    echo json_encode(['success' => false, 'message' => 'Invalid document type: ' . $type]);
+    exit;
+}
+
+$statusCol  = $fieldMap[$type];
+$remarksCol = $remarksMap[$type];
 
 try {
     $stmt = $pdo->prepare("
         UPDATE documents
-        SET `{$statusField}`  = 'rejected',
-            `{$remarksField}` = ?
-        WHERE StudentInfoId = ?
+        SET `{$statusCol}`  = 'rejected',
+            `{$remarksCol}` = ?
+        WHERE Id = ?
     ");
-    $stmt->execute([$reason, $studentId]);
+    $stmt->execute([$reason, $id]);
 
     if ($stmt->rowCount() === 0) {
-        echo json_encode(['success' => false, 'message' => 'No document record found for this student.']);
+        echo json_encode(['success' => false, 'message' => 'Document not found.']);
         exit;
     }
 
-    // ── Log the rejection ─────────────────────────────────────────────────────
-    $logStmt = $pdo->prepare("
-        INSERT INTO activity_logs (UserId, UserType, Action, ActionDetails, CreatedAt)
-        VALUES (?, 'admin', 'reject_document', ?, NOW())
-    ");
-    $logStmt->execute([
-        $_SESSION['user_id'],
-        "Rejected {$fieldType} for StudentInfoId {$studentId}. Reason: {$reason}"
-    ]);
-
-    echo json_encode(['success' => true, 'message' => 'Document rejected successfully.']);
+    echo json_encode(['success' => true, 'message' => $type . ' rejected successfully.']);
 
 } catch (PDOException $e) {
     error_log('reject-document.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error.']);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }
 ?>

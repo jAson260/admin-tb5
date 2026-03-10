@@ -163,11 +163,5 @@ function isActive($page) {
         </li>
         
         <!-- Print Management -->
-        <li>
-            <a href="../print-management/" class="<?php echo isActive('print-management.php'); ?>">
-                <i class="bi bi-printer-fill"></i>
-                <span class="menu-label">Print Management</span>
-            </a>
-        </li>
     </ul>
 </aside>

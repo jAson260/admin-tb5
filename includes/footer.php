@@ -67,7 +67,7 @@
     <!-- Ultra-slim Bottom Bar -->
     <div class="bottom-bar-xs text-center">
         <div class="container">
-            &copy; <?php echo date('Y'); ?> <strong>The Big Five Learning and Assesment Center</strong> | All rights reserve
+            &copy; <?php echo date('Y'); ?> <strong>The Big Five Training and Assessment Center Inc.</strong> | All rights reserved
         </div>
     </div>
 </footer>

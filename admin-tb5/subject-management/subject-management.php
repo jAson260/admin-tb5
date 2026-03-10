@@ -224,7 +224,7 @@ try {
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <div class="modal-header text-white border-0"
-                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                style="background: #4169E1;">
                 <h5 class="modal-title fw-bold">
                     <i class="bi bi-journal-plus me-2"></i>
                     <span id="modalTitle">Add New Subject</span>
