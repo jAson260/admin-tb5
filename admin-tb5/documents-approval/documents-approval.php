@@ -48,11 +48,6 @@ include('../sidebar/sidebar.php');
                             Review and approve submitted documents from students
                         </p>
                     </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <button class="btn btn-light btn-sm">
-                            <i class="bi bi-download me-1"></i>Export
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
